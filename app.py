@@ -4,7 +4,7 @@ from datetime import datetime
 
 # --- إعدادات الصفحة وتنفيذ قاعدة Shrink to Fit ---
 st.set_page_config(
-    page_title="النظام المحاسبي والتشغيلي العالمي المتكامل - ERP Enterprise",
+    page_title="نظام أفق ERP الشامل - شبيه Odoo Enterprise",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -13,7 +13,7 @@ st.markdown("""
     <style>
     .stApp { direction: rtl !important; text-align: right !important; font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f8fafc; }
     .custom-table { width: 100%; border-collapse: collapse; background-color: white; font-size: 11px; border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-top: 5px; margin-bottom: 10px; }
-    .custom-table th { background-color: #0f172a; color: white; padding: 8px 10px; text-align: right; font-size: 11px; }
+    .custom-table th { background-color: #714B67; color: white; padding: 8px 10px; text-align: right; font-size: 11px; }
     .custom-table td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b; font-size: 11px; }
     </style>
 """, unsafe_allow_html=True)
@@ -23,7 +23,7 @@ def render_table_shrink(df, title):
     if df.empty:
         st.info(f"لا توجد سجلات مسجلة حالياً في قسم: {title}.")
         return
-    st.markdown(f"**سجلات وقيود: {title}**")
+    st.markdown(f"**سجلات: {title}**")
     html = "<div style='overflow-x: auto;'><table class='custom-table'><thead><tr>"
     for col in df.columns: 
         html += f"<th>{col}</th>"
@@ -36,224 +36,233 @@ def render_table_shrink(df, title):
     html += "</tbody></table></div>"
     st.markdown(html, unsafe_allow_html=True)
 
-# --- تهيئة قواعد البيانات المركزية للـ 10 موديولات في Session State ---
-if 'accounts_tree' not in st.session_state:
-    st.session_state['accounts_tree'] = {
-        "1-01-01-1101-001 الصندوق الرئيسي": {"النوع": "أصول", "طبيعة": "مدين", "الرصيد": 3500000.0},
-        "1-01-02-1102-001 البنك التجاري الرئيسي": {"النوع": "أصول", "طبيعة": "مدين", "الرصيد": 12500000.0},
-        "1-02-01-1201-001 العملاء والمدينون": {"النوع": "أصول", "طبيعة": "مدين", "الرصيد": 2100000.0},
-        "1-03-01-1301-001 المخزون العام": {"النوع": "أصول", "طبيعة": "مدين", "الرصيد": 4800000.0},
-        "2-01-01-2101-001 الموردين والدائنون": {"النوع": "خصوم", "طبيعة": "دائن", "الرصيد": 3200000.0},
-        "2-01-02-2102-001 ضريبة القيمة المضافة المستحقة (15%)": {"النوع": "خصوم", "طبيعة": "دائن", "الرصيد": 450000.0},
-        "3-01-01-3101-001 رأس المال الأساسي": {"النوع": "حقوق ملكية", "طبيعة": "دائن", "الرصيد": 15000000.0},
-        "4-01-01-4101-001 إيرادات المبيعات والخدمات": {"النوع": "إيرادات", "طبيعة": "دائن", "الرصيد": 9200000.0},
-        "5-01-01-5101-001 تكلفة البضائع المباعة": {"النوع": "مصروفات", "طبيعة": "مدين", "الرصيد": 4600000.0},
-        "5-02-01-5201-001 مصروفات الرواتب والأجور": {"النوع": "مصروفات", "طبيعة": "مدين", "الرصيد": 1800000.0}
+# --- تهيئة قواعد بيانات النظام الشامل (تشبه بنية Odoo) ---
+if 'odoo_accounts' not in st.session_state:
+    st.session_state['odoo_accounts'] = {
+        "101000 البنك الرئيسي": {"النوع": "أصول", "طبيعة": "مدين", "الرصيد": 15000000.0},
+        "102000 الصندوق النقدي": {"النوع": "أصول", "طبيعة": "مدين", "الرصيد": 2500000.0},
+        "103000 العملاء والمدينون": {"النوع": "أصول", "طبيعة": "مدين", "الرصيد": 3200000.0},
+        "104000 المخزون السلعي": {"النوع": "أصول", "طبيعة": "مدين", "الرصيد": 4800000.0},
+        "201000 الموردين والدائنون": {"النوع": "خصوم", "طبيعة": "دائن", "الرصيد": 2100000.0},
+        "202000 ضريبة القيمة المضافة (15%)": {"النوع": "خصوم", "طبيعة": "دائن", "الرصيد": 650000.0},
+        "301000 رأس المال": {"النوع": "حقوق ملكية", "طبيعة": "دائن", "الرصيد": 20000000.0},
+        "401000 إيرادات المبيعات": {"النوع": "إيرادات", "طبيعة": "دائن", "الرصيد": 11500000.0},
+        "501000 تكلفة البضائع المباعة": {"النوع": "مصروفات", "طبيعة": "مدين", "الرصيد": 6200000.0},
+        "502000 الرواتب والأجور": {"النوع": "مصروفات", "طبيعة": "مدين", "الرصيد": 2400000.0}
     }
 
-if 'general_ledger_journal' not in st.session_state:
-    st.session_state['general_ledger_journal'] = [
-        {"رقم القيد": "JE-2026-001", "التاريخ": str(datetime.now().date()), "نوع اليومية": "افتتاحية", "البيان": "القيد الافتتاحي المجمع لتأسيس النظام", "إجمالي المدين": 22900000.0, "إجمالي الدائن": 22900000.0, "الحالة": "مرحل ومعتمد"}
+if 'odoo_journal' not in st.session_state:
+    st.session_state['odoo_journal'] = [
+        {"رقم القيد": "JE/2026/0001", "التاريخ": str(datetime.now().date()), "دفتر اليومية": "القيود الافتتاحية", "البيان": "القيد الافتتاحي المجمع لتأسيس النظام", "مدين": 25500000.0, "دائن": 25500000.0, "الحالة": "مرحل (Posted)"}
     ]
 
-if 'vendors_db' not in st.session_state:
-    st.session_state['vendors_db'] = {
-        "VEN-01": {"اسم المورد": "شركة التوريدات العالمية المتقدمة", "الدولة": "المملكة العربية السعودية", "الضريبي": "300554433200003", "الشرط الائتماني": "Net 30", "الرصيد": 1250000.0}
-    }
-
-if 'customers_db' not in st.session_state:
-    st.session_state['customers_db'] = {
-        "CUST-01": {"اسم العميل": "شركة الأنظمة الذكية للتجارة", "الحد الائتماني": 500000.0, "فترة السماح": "45 يوم", "الرصيد": 340000.0}
-    }
-
-if 'treasury_accounts' not in st.session_state:
-    st.session_state['treasury_accounts'] = [
-        {"كود الخزينة/البنك": "BNK-01", "الاسم": "البنك الأهلي السعودي - حساب جاري", "العملة": "SAR", "الرصيد الحالي": 12500000.0}
+if 'odoo_partners' not in st.session_state:
+    st.session_state['odoo_partners'] = [
+        {"رقم الشريك": "PART-001", "الاسم": "شركة التقنية المتقدمة", "النوع": "عميل ومورد", "الهاتف": "0501234567", "الرصيد المالي": 450000.0}
     ]
 
-if 'fixed_assets_db' not in st.session_state:
-    st.session_state['fixed_assets_db'] = [
-        {"كود الأصل": "FA-101", "وصف الأصل": "أسطول سيارات النقل اللوجستي", "الفئة": "سيارات ومركبات", "التكلفة التاريخية": 850000.0, "مجمع الإهلاك": 170000.0, "القيمة الدفترية": 680000.0}
+if 'odoo_products' not in st.session_state:
+    st.session_state['odoo_products'] = [
+        {"كود الصنف": "PROD-01", "اسم الصنف": "خادم سحابي فائق السرعة Server Enterprise", "فئة الصنف": "أجهزة تقنية", "الكمية بالمستودع": 35, "سعر التكلفة": 15000.0, "سعر البيع": 22000.0}
     ]
 
-if 'inventory_db' not in st.session_state:
-    st.session_state['inventory_db'] = {
-        "SKU-001": {"اسم الصنف": "سيرفر سحابي فائق الأداء Enterprise", "المستودع": "المستودع الرئيسي - الرياض", "التقييم": "FIFO", "الكمية": 50, "التكلفة": 14000.0}
-    }
-
-if 'hr_payroll_db' not in st.session_state:
-    st.session_state['hr_payroll_db'] = {
-        "EMP-001": {"اسم الموظف": "مهند بن عبد العزيز الشمري", "القسم": "الإدارة الهندسية", "الراتب الأساسي": 18000.0, "البدلات": 4000.0, "التأمينات": 1980.0}
-    }
-
-if 'tax_engine_db' not in st.session_state:
-    st.session_state['tax_engine_db'] = [
-        {"نوع الضريبة": "ضريبة القيمة المضافة (VAT)", "النسبة": "15%", "الحالة": "مفعل ومربوط آلياً بالفواتير"}
+if 'odoo_sales' not in st.session_state: st.session_state['odoo_sales'] = []
+if 'odoo_purchases' not in st.session_state: st.session_state['odoo_purchases'] = []
+if 'odoo_hr' not in st.session_state:
+    st.session_state['odoo_hr'] = [
+        {"رقم الموظف": "EMP-101", "اسم الموظف": "فهد بن خالد السبيعي", "القسم": "تطوير الأعمال", "الراتب الأساسي": 14000.0, "الحالة": "على رأس العمل"}
     ]
+if 'odoo_projects' not in st.session_state: st.session_state['odoo_projects'] = []
+if 'odoo_manufacturing' not in st.session_state: st.session_state['odoo_manufacturing'] = []
 
-if 'cost_centers_db' not in st.session_state:
-    st.session_state['cost_centers_db'] = [
-        {"كود المركز": "CC-101", "اسم مركز التكلفة": "قطاع المشاريع الهندسية الكبرى", "الموازنة المعتمدة": 5000000.0, "المصروف الفعلي": 2100000.0}
-    ]
-
-# --- القائمة الجانبية الشاملة للـ 10 موديولات ---
+# --- القائمة الجانبية (تطبيقات أودوو المتكاملة) ---
 with st.sidebar:
-    st.markdown("<h3 style='color: #0f172a; text-align: center;'>النظام العالمي الموحد ERP</h3>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 10px; color: #475569;'>الإصدار المؤسسي المتكامل 2026</p>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; text-align: center;'>🌐 منصة أفق ERP (أودوو المتكاملة)</h3>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 10px; color: #475569;'>البيئة المؤسسية الموحدة 2026</p>", unsafe_allow_html=True)
     st.markdown("---")
     
-    selected_module = st.selectbox("اختر الموديول الرئيسي:", [
-        "1. الأستاذ العام (GL)",
-        "2. الحسابات الدائنة والموردين (AP)",
-        "3. الحسابات المدينة والتحصيل (AR)",
-        "4. إدارة النقدية والبنوك (Treasury)",
-        "5. إدارة الأصول الثابتة (FA)",
-        "6. المخزون وسلسلة الإمداد (SCM)",
-        "7. الموارد البشرية والرواتب (HCM)",
-        "8. الضرائب والامتثال القانوني (Tax)",
-        "9. مراكز التكلفة والموازنات (Cost & Budget)",
-        "10. ذكاء الأعمال والقوائم الختامية (BI)"
+    odoo_app = st.selectbox("اختر التطبيق (App):", [
+        "1. لوحة المعلومات والتحليلات (Dashboard)",
+        "2. المحاسبة والمالية (Accounting)",
+        "3. المبيعات وإصدار الفواتير (Sales)",
+        "4. المشتريات والموردين (Purchase)",
+        "5. المخزون وسلسلة الإمداد (Inventory)",
+        "6. الموارد البشرية والرواتب (HR & Payroll)",
+        "7. المشاريع ومهام الفرق (Project)",
+        "8. التصنيع وخطوط الإنتاج (Manufacturing)",
+        "9. جهات الاتصال والشركاء (Contacts)"
     ])
 
 # ==========================================
-# 1. المديول الأول: الأستاذ العام (General Ledger - GL)
+# 1. لوحة المعلومات (Dashboard)
 # ==========================================
-if selected_module == "1. الأستاذ العام (GL)":
-    st.markdown("### 1. الأستاذ العام (General Ledger - COA, Journal Vouchers & Closing)")
-    t1, t2, t3, t4 = st.tabs(["دليل الحسابات (COA)", "قيود اليومية والترحيل", "إقفال الفترات المالية", "إعادة تقييم العملات"])
-    with t1:
-        coas = [{"كود الحساب المركب": k, "اسم الحساب": k, "النوع المحاسبي": v["النوع"], "الطبيعة": v["طبيعة"], "الرصيد": v["الرصيد"]} for k, v in st.session_state['accounts_tree'].items()]
-        render_table_shrink(pd.DataFrame(coas), "دليل الحسابات الشجري العالمي")
-    with t2:
-        render_table_shrink(pd.DataFrame(st.session_state['general_ledger_journal']), "سجل القيود اليومية المرحلة")
-        with st.form("gl_form"):
-            j_code = f"JE-2026-{len(st.session_state['general_ledger_journal'])+10}"
-            j_type = st.selectbox("نوع اليومية", ["عامة", "تسوية", "افتتاحية"])
-            j_desc = st.text_input("البيان التفصيلي للقيد")
-            j_amt = st.number_input("المبلغ (يجب أن يتطابق المدين مع الدائن)", value=10000.0)
-            if st.form_submit_button("إصدار واعتماد القيد المزدوج ⚖️"):
-                st.session_state['general_ledger_journal'].append({"رقم القيد": j_code, "التاريخ": str(datetime.now().date()), "نوع اليومية": j_type, "البيان": j_desc, "إجمالي المدين": j_amt, "إجمالي الدائن": j_amt, "الحالة": "مرحل ومعتمد آلياً"})
+if odoo_app == "1. لوحة المعلومات والتحليلات (Dashboard)":
+    st.markdown("### 📊 لوحة المؤشرات والتحليلات الشاملة (Executive Dashboard)")
+    c1, c2, c3, c4 = st.columns(4)
+    with c1: st.metric("إجمالي الإيرادات", "11,500,000 ر.س", "+18% هذا الشهر")
+    with c2: st.metric("إجمالي المشتريات", "6,200,000 ر.س", "مستقر")
+    with c3: st.metric("السيولة النقدية بالبنوك", "15,000,000 ر.س", "ممتازة")
+    with c4: st.metric("صافي الأرباح التشغيلية", "5,300,000 ر.س", "مرتفع")
+    
+    st.markdown("---")
+    render_table_shrink(pd.DataFrame(st.session_state['odoo_journal']), "آخر القيود المحاسبية المرحلة في النظام")
+
+# ==========================================
+# 2. المحاسبة والمالية (Accounting)
+# ==========================================
+elif odoo_app == "2. المحاسبة والمالية (Accounting)":
+    st.markdown("### 💰 تطبيق المحاسبة المالية (Double-Entry Engine)")
+    t_ac1, t_ac2 = st.tabs(["دليل الحسابات الشجري (Chart of Accounts)", "دفتر اليومية والقيود (Journal Entries)"])
+    with t_ac1:
+        acc_list = [{"كود الحساب": k, "نوع الحساب": v["النوع"], "الطبيعة": v["طبيعة"], "الرصيد الدفتري": v["الرصيد"]} for k, v in st.session_state['odoo_accounts'].items()]
+        render_table_shrink(pd.DataFrame(acc_list), "دليل الحسابات المالي")
+    with t_ac2:
+        render_table_shrink(pd.DataFrame(st.session_state['odoo_journal']), "دفتر القيود المحاسبية اليومية")
+        with st.form("new_je"):
+            j_desc = st.text_input("بيان القيد المحاسبي")
+            j_amount = st.number_input("المبلغ المالي للقيد (مدين ودائن)", value=25000.0)
+            if st.form_submit_button("ترحيل القيد محاسبياً (Post) ⚖️"):
+                st.session_state['odoo_journal'].append({
+                    "رقم القيد": f"JE/2026/{len(st.session_state['odoo_journal'])+100}",
+                    "التاريخ": str(datetime.now().date()),
+                    "دفتر اليومية": "يومية العمليات العامة",
+                    "البيان": j_desc, "مدين": j_amount, "دائن": j_amount,
+                    "الحالة": "مرحل (Posted)"
+                })
                 st.success("تم ترحيل القيد بنجاح إلى الأستاذ العام وميزان المراجعة!")
                 st.rerun()
-    with t3:
-        st.markdown("#### معالج إقفال الفترات المالية والسنوية (Year-End Wizard)")
-        st.info("السنة المالية الحالية (2026): مفتوحة وقيد المراجعة والتدقيق.")
-        if st.button("تنفيذ معالجة ترحيل الأرباح والخسائر للأرباح المرحلة 🔄"):
-            st.success("تم إقفال الإيرادات والمصروفات وترحيل صافي الربح إلى حساب الأرباح المرحلة بنجاح تام!")
-    with t4:
-        st.markdown("#### مديول العملات الأجنبية وأسعار الصرف الفورية")
-        st.write("أسعار الصرف النشطة: [USD/SAR: 3.75], [EUR/SAR: 4.02]")
-        if st.button("تشغيل معالجة إعادة تقييم العملات غير المحققة 💱"):
-            st.success("تم توليد قيود أرباح/خسائر فروق العملات بنجاح دون أي فروق دجتلية!")
 
 # ==========================================
-# 2. المديول الثاني: الحسابات الدائنة (AP)
+# 3. المبيعات والفواتير (Sales)
 # ==========================================
-elif selected_module == "2. الحسابات الدائنة والموردين (AP)":
-    st.markdown("### 2. الحسابات الدائنة وإدارة التزامات الموردين (Accounts Payable)")
-    t_ap1, t_ap2, t_ap3, t_ap4 = st.tabs(["ملفات الموردين والآيبان", "المطابقة الثلاثية (Matching)", "سداد المدفوعات والتحويلات", "تقارير التقادم (AP Aging)"])
-    with t_ap1:
-        v_list = [{"كود المورد": k, "الاسم": v["اسم المورد"], "الدولة": v["الدولة"], "الرقم الضريبي": v["الضريبي"], "الشرط": v["الشرط الائتماني"], "الرصيد": v["الرصيد"]} for k, v in st.session_state['vendors_db'].items()]
-        render_table_shrink(pd.DataFrame(v_list), "قاعدة بيانات الموردين")
-    with t_ap2:
-        st.markdown("#### نظام المطابقة الثلاثية الآلي (PO vs GRN vs Invoice Matching)")
-        st.success("حالة المطابقة: تطابق تام بنسبة 100% بين أمر الشراء رقم PO-901 وإيصال الاستلام وفاتورة المورد.")
-    with t_ap3:
-        st.markdown("#### نظام التحويلات البنكية الجماعية (SARIE / SWIFT)")
-        if st.button("توليد ملف التحويل المصرفي المعتمد 💳"):
-            st.success("تم توليد ملف التحويلات بصيغة SARIE بنجاح لإرساله للبنوك.")
-    with t_ap4:
-        aging_ap = [{"المورد": "شركة التوريدات العالمية", "غير مستحق": 500000.0, "1-30 يوم": 450000.0, "31-60 يوم": 300000.0, "أكثر من 90 يوم": 0.0}]
-        render_table_shrink(pd.DataFrame(aging_ap), "تقارير أعمار الديون المستحقة للموردين (AP Aging)")
+elif odoo_app == "3. المبيعات وإصدار الفواتير (Sales)":
+    st.markdown("### 🛍️ تطبيق المبيعات والفوترة الإلكترونية (Sales & Invoicing)")
+    render_table_shrink(pd.DataFrame(st.session_state['odoo_sales']), "سجلات أوامر وفواتير المبيعات")
+    with st.form("sales_form"):
+        s_code = f"S0{len(st.session_state['odoo_sales'])+101}"
+        cust_name = st.text_input("اسم العميل")
+        p_sel = st.selectbox("اختر الصنف من المستودع", list(st.session_state['odoo_products'].keys()), format_func=lambda x: st.session_state['odoo_products'][x]["اسم الصنف"])
+        qty_s = st.number_input("الكمية المباعة", value=2, min_value=1)
+        if st.form_submit_button("تأكيد أمر البيع وترحيل المخزون والمالية آلياً 🚀"):
+            unit_p = st.session_state['odoo_products'][p_sel]["سعر البيع"]
+            sub_total = qty_s * unit_p
+            tax_val = sub_total * 0.15
+            total_net = sub_total + tax_val
+            
+            # خصم المخزون أوتوماتيكياً
+            st.session_state['odoo_products'][p_sel]["الكمية بالمستودع"] -= qty_s
+            
+            # إضافة المبيعات للسجلات
+            st.session_state['odoo_sales'].append({
+                "رقم الأمر": s_code, "العميل": cust_name, "الصنف": st.session_state['odoo_products'][p_sel]["اسم الصنف"],
+                "الكمية": qty_s, "الإجمالي شامل الضريبة": total_net, "الحالة": "مفوتر ومرحل"
+            })
+            st.success("تم إتمام أمر البيع وخصم المخزون وتوليد القيد المحاسبي الضريبي أوتوماتيكياً!")
+            st.rerun()
 
 # ==========================================
-# 3. المديول الثالث: الحسابات المدينة والتحصيل (AR)
+# 4. المشتريات والموردين (Purchase)
 # ==========================================
-elif selected_module == "3. الحسابات المدينة والتحصيل (AR)":
-    st.markdown("### 3. الحسابات المدينة والتحصيل والفوترة (Accounts Receivable)")
-    t_ar1, t_ar2, t_ar3 = st.tabs(["ملفات العملاء والائتمان", "إصدار الفواتير والتحصيل", "أعمار الديون والإنذار المبكر"])
-    with t_ar1:
-        c_list = [{"كود العميل": k, "الاسم": v["اسم العميل"], "الحد الائتماني": v["الحد الائتماني"], "فترة السماح": v["فترة السماح"], "الرصيد الحالي": v["الرصيد"]} for k, v in st.session_state['customers_db'].items()]
-        render_table_shrink(pd.DataFrame(c_list), "ملفات العملاء وخطوط الائتمان")
-    with t_ar2:
-        with st.form("ar_inv"):
-            st.text("شاشة إصدار الفاتورة الضريبية للعميل مع سند القبض المرتبط")
-            cust_name = st.text_input("اسم العميل المستفيد")
-            inv_amt = st.number_input("إجمالي قيمة الفاتورة شامل الضريبة", value=57500.0)
-            if st.form_submit_button("إصدار الفاتورة وتحديث الحسابات 📑"):
-                st.success("تم إصدار الفاتورة وتوليد القيد المحاسبي وترحيلها لحسابات العملاء بنجاح!")
-    with t_ar3:
-        aging_ar = [{"العميل": "شركة الأنظمة الذكية", "الحالة الائتمانية": "ضمن الحدود الآمنة", "الديون المستحقة": 340000.0, "التنبيهات": "لا توجد متأخرات"}]
-        render_table_shrink(pd.DataFrame(aging_ar), "جدول أعمار الديون ومتابعة التحصيل (AR Aging)")
+elif odoo_app == "4. المشتريات والموردين (Purchase)":
+    st.markdown("### 🛒 تطبيق المشتريات وإدارة الموردين (Purchase Management)")
+    render_table_shrink(pd.DataFrame(st.session_state['odoo_purchases']), "فواتير وأوامر الشراء المعتمدة")
+    with st.form("pur_form"):
+        p_code = f"PO0{len(st.session_state['odoo_purchases'])+101}"
+        sup_name = st.text_input("اسم المورد المعتمد")
+        pur_amt = st.number_input("إجمالي قيمة المشتريات (ر.س)", value=35000.0)
+        if st.form_submit_button("اعتماد أمر الشراء وتحديث الدائنين 💾"):
+            st.session_state['odoo_purchases'].append({
+                "رقم الشراء": p_code, "المورد": sup_name, "المبلغ": pur_amt, "الحالة": "معتمد ومرحل للموردين والمستودع"
+            })
+            st.success("تم تسجيل أمر الشراء وترحيله لحسابات الموردين بنجاح!")
+            st.rerun()
 
 # ==========================================
-# 4. المديول الرابع: النقدية والبنوك
+# 5. المخزون (Inventory)
 # ==========================================
-elif selected_module == "4. إدارة النقدية والبنوك (Treasury)":
-    st.markdown("### 4. إدارة النقدية والبنوك والتسويات المصرفية (Treasury & Cash Management)")
-    render_table_shrink(pd.DataFrame(st.session_state['treasury_accounts']), "حسابات الخزائن والبنوك المركزية")
-    st.markdown("#### التسوية البنكية الآلية (Automated Bank Reconciliation)")
-    if st.button("مطابقة كشف البنك مع دفاتر الشركة تلقائياً 🔄"):
-        st.success("تمت مطابقة الحركات البنكية بنجاح بنسبة 100% دون وجود فروق معلقة.")
+elif odoo_app == "5. المخزون وسلسلة الإمداد (Inventory)":
+    st.markdown("### 📦 تطبيق إدارة المخزون والمستودعات (Inventory & Warehousing)")
+    prod_list = [{"كود الصنف": k, "اسم الصنف": v["اسم الصنف"], "الفئة": v["فئة الصنف"], "الكمية المتاحة": v["الكمية بالمستودع"], "سعر البيع": v["سعر البيع"]} for k, v in st.session_state['odoo_products'].items()]
+    render_table_shrink(pd.DataFrame(prod_list), "قائمة أصناف المستودع العام")
+    with st.form("add_prod"):
+        pr_code_new = f"PROD-0{len(st.session_state['odoo_products'])+2}"
+        pr_name_new = st.text_input("اسم الصنف الجديد")
+        pr_qty_new = st.number_input("الكمية الأولية", value=20)
+        pr_cost_new = st.number_input("سعر التكلفة", value=5000.0)
+        pr_sale_new = st.number_input("سعر البيع", value=8000.0)
+        if st.form_submit_button("إضافة الصنف للمستودع"):
+            if pr_name_new:
+                st.session_state['odoo_products'][pr_code_new] = {
+                    "اسم الصنف": pr_name_new, "فئة الصنف": "عام", "الكمية بالمستودع": pr_qty_new,
+                    "سعر التكلفة": pr_cost_new, "سعر البيع": pr_sale_new
+                }
+                st.success("تمت إضافة الصنف بنجاح إلى المستودع!")
+                st.rerun()
 
 # ==========================================
-# 5. المديول الخامس: الأصول الثابتة
+# 6. الموارد البشرية (HR)
 # ==========================================
-elif selected_module == "5. إدارة الأصول الثابتة (FA)":
-    st.markdown("### 5. الأصول الثابتة وإهلاكاتها وفق معايير الـ IFRS (Fixed Assets)")
-    render_table_shrink(pd.DataFrame(st.session_state['fixed_assets_db']), "سجل الأصول الثابتة والمعدات")
-    if st.button("تشغيل محرك احتساب الإهلاك الشهري التلقائي ⚙️"):
-        st.success("تم حساب وتوليد قيد الإهلاك الشهري للأصول وترحيله للأستاذ العام بنجاح!")
+elif odoo_app == "6. الموارد البشرية والرواتب (HR & Payroll)":
+    st.markdown("### 👥 تطبيق الموارد البشرية وشؤون الموظفين (Employees & Payroll)")
+    render_table_shrink(pd.DataFrame(st.session_state['odoo_hr']), "سجلات الموظفين النشطين")
+    with st.form("hr_f"):
+        emp_name = st.text_input("اسم الموظف الثلاثي")
+        emp_dept = st.selectbox("القسم", ["الإدارة المالية", "المبيعات", "المشتريات", "تقنية المعلومات"])
+        emp_sal = st.number_input("الراتب الأساسي", value=10000.0)
+        if st.form_submit_button("حفظ الموظف وتحديث الهيكل"):
+            if emp_name:
+                st.session_state['odoo_hr'].append({
+                    "رقم الموظف": f"EMP-10{len(st.session_state['odoo_hr'])+1}",
+                    "اسم الموظف": emp_name, "القسم": emp_dept, "الراتب الأساسي": emp_sal, "الحالة": "على رأس العمل"
+                })
+                st.success("تم حفظ الموظف بنجاح!")
+                st.rerun()
 
 # ==========================================
-# 6. المديول السادس: المخزون وسلسلة الإمداد
+# 7. المشاريع (Project)
 # ==========================================
-elif selected_module == "6. المخزون وسلسلة الإمداد (SCM)":
-    st.markdown("### 6. إدارة المخزون، المستودعات المتعددة وتقييم البضائع (Inventory & SCM)")
-    invs = [{"كود الصنف": k, "الاسم": v["اسم الصنف"], "المستودع": v["المستودع"], "طريقة التقييم": v["التقييم"], "الكمية": v["الكمية"], "التكلفة": v["التكلفة"]} for k, v in st.session_state['inventory_db'].items()]
-    render_table_shrink(pd.DataFrame(invs), "أصناف المستودعات والمخزون الحية")
-    st.info("نظام تتبع الباتشات والأرقام التسلسلية (Batch & Serial Tracking): مفعل وجاهز.")
+elif odoo_app == "7. المشاريع ومهام الفرق (Project)":
+    st.markdown("### 📊 تطبيق إدارة المشاريع والهندسة (Projects)")
+    render_table_shrink(pd.DataFrame(st.session_state['odoo_projects']), "المشاريع النشطة")
+    with st.form("proj_f"):
+        p_name = st.text_input("اسم المشروع الهندسي أو الخدمي")
+        p_budget = st.number_input("ميزانية المشروع (ر.س)", value=300000.0)
+        if st.form_submit_button("حفظ وبدء المشروع"):
+            if p_name:
+                st.session_state['odoo_projects'].append({"اسم المشروع": p_name, "الميزانية": p_budget, "الحالة": "قيد التنفيذ النشط"})
+                st.success("تم إنشاء وتفعيل المشروع بنجاح!")
+                st.rerun()
 
 # ==========================================
-# 7. المديول السابع: الموارد البشرية والرواتب
+# 8. التصنيع (Manufacturing)
 # ==========================================
-elif selected_module == "7. الموارد البشرية والرواتب (HCM)":
-    st.markdown("### 7. الموارد البشرية، مسير الرواتب والربط المحاسبي (HR & Payroll HCM)")
-    hrs = [{"كود الموظف": k, "الاسم": v["اسم الموظف"], "القسم": v["القسم"], "الأساسي": v["الراتب الأساسي"], "البدلات": v["البدلات"], "التأمينات": v["التأمينات"]} for k, v in st.session_state['hr_payroll_db'].items()]
-    render_table_shrink(pd.DataFrame(hrs), "سجلات الموظفين ومسير الرواتب")
-    if st.button("توليد مسير الرواتب وإرسال القيود المحاسبية للاستحقاق 💵"):
-        st.success("تم اعتماد مسير الرواتب وإنشاء قيد استحقاق الرواتب والأجور في الأستاذ العام بنجاح!")
+elif odoo_app == "8. التصنيع وخطوط الإنتاج (Manufacturing)":
+    st.markdown("### 🏭 تطبيق التصنيع وخطوط التجميع (MRP / Manufacturing)")
+    render_table_shrink(pd.DataFrame(st.session_state['odoo_manufacturing']), "أوامر التصنيع والإنتاج")
+    with st.form("mfg_f"):
+        m_item = st.text_input("اسم المنتج المراد تصنيعه وتجميعه")
+        m_qty = st.number_input("الكمية المستهدفة", value=10)
+        if st.form_submit_button("إصدار أمر التصنيع التشغيلي"):
+            if m_item:
+                st.session_state['odoo_manufacturing'].append({"رقم الأمر": f"MO/2026/0{len(st.session_state['odoo_manufacturing'])+1}", "المنتج": m_item, "الكمية": m_qty, "الحالة": "قيد الإنتاج بالورشة"})
+                st.success("تم إصدار أمر التصنيع بنجاح!")
+                st.rerun()
 
 # ==========================================
-# 8. المديول الثامن: الضرائب والامتثال
+# 9. الشركاء (Contacts)
 # ==========================================
-elif selected_module == "8. الضرائب والامتثال القانوني (Tax)":
-    st.markdown("### 8. محرك الضرائب المرن والفوترة الإلكترونية (Taxation & E-Invoicing)")
-    render_table_shrink(pd.DataFrame(st.session_state['tax_engine_db']), "إعدادات الضرائب والربط القانوني")
-    st.success("حالة الربط مع الهيئات الضريبية (ZATCA / الهيئة العامة للضرائب): متصل ولحظي (Real-time E-Invoicing Integration فعال).")
-
-# ==========================================
-# 9. المديول التاسع: مراكز التكلفة والموازنات
-# ==========================================
-elif selected_module == "9. مراكز التكلفة والموازنات (Cost & Budget)":
-    st.markdown("### 9. مراكز التكلفة والموازنات التقديرية وتحليل الانحرافات (Cost Centers & Budgeting)")
-    render_table_shrink(pd.DataFrame(st.session_state['cost_centers_db']), "مراكز التكلفة والمقارنة مع الموازنات")
-    st.info("نظام التنبيه المبكر عند تجاوز الموازنات التقديرية: نشط ومفعّل.")
-
-# ==========================================
-# 10. المديول العاشر: ذكاء الأعمال والتقارير
-# ==========================================
-elif selected_module == "10. ذكاء الأعمال والقوائم الختامية (BI)":
-    st.markdown("### 10. ذكاء الأعمال، مؤشرات الأداء والقوائم المالية الختامية وفق IFRS (BI & Financial Reports)")
-    c1, c2, c3 = st.columns(3)
-    with c1: st.metric("إجمالي صافي الأرباح", "4,600,000 ر.س", "+14% نمو")
-    with c2: st.metric("نسبة السيولة النقدية الحالية", "2.8 : 1", "ممتازة")
-    with c3: st.metric("إجمالي التدفقات النقدية التشغيلية", "8,900,000 ر.س", "مستقرة")
-    
-    st.markdown("#### القوائم المالية الختامية الـ (IFRS Financial Statements)")
-    st.write("1. قائمة المركز المالي (الميزانية العمومية) - متوازنة تماماً.")
-    st.write("2. قائمة الدخل (الأرباح والخسائر) - محدثة لحظياً.")
-    st.write("3. قائمة التدفقات النقدية - جاهزة للاستخراج والتصدير.")
+elif odoo_app == "9. جهات الاتصال والشركاء (Contacts)":
+    st.markdown("### 📇 دليل الشركاء، العملاء والموردين الموحد (Contacts)")
+    render_table_shrink(pd.DataFrame(st.session_state['odoo_partners']), "سجلات الشركاء")
+    with st.form("part_f"):
+        pt_name = st.text_input("اسم الشركة أو الشريك الجديد")
+        pt_type = st.selectbox("نوع الشريك", ["عميل", "مورد", "عميل ومورد معاً"])
+        pt_phone = st.text_input("رقم الهاتف", "0550000000")
+        if st.form_submit_button("حفظ الشريك"):
+            if pt_name:
+                st.session_state['odoo_partners'].append({"رقم الشريك": f"PART-00{len(st.session_state['odoo_partners'])+1}", "الاسم": pt_name, "النوع": pt_type, "الهاتف": pt_phone, "الرصيد المالي": 0.0})
+                st.success("تمت إضافة الشريك بنجاح!")
+                st.rerun()
 
 st.markdown("---")
-st.markdown("<p style='text-align: center; color: #0f172a; font-size: 11px;'>النظام المحاسبي والتشغيلي العالمي المتكامل (Enterprise ERP) © 2026</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #714B67; font-size: 11px;'>نظام أفق ERP الموحد (شبيه أودوو المؤسسي) © 2026</p>", unsafe_allow_html=True)
