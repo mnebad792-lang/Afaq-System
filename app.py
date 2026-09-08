@@ -328,13 +328,14 @@ if 'zatca_vat_returns_db' not in st.session_state:
         }
     ]
 
-# --- تنسيقات CSS مع تصغير الخط للقوائم العلوية لتظهر كاملة وتحجيم الجداول تلقائياً (Shrink to Fit) ---
+# --- تنسيقات CSS مع تصغير الهوامش ومنع التداخل وتطبيق (Shrink to Fit) ---
 st.markdown("""
     <style>
     .stApp, body, p, span, div, label, input, select {
         direction: rtl !important; text-align: right !important; font-family: 'Segoe UI', Tahoma, sans-serif;
     }
-    .block-container { padding: 1rem 1.5rem !important; background-color: #f4f6f9; }
+    /* حل مشكلة التداخل العلوي وتوفير مساحة كافية للشريط */
+    .block-container { padding: 5rem 1.5rem 1rem 1.5rem !important; background-color: #f4f6f9; }
     
     .stButton>button {
         font-size: 12px !important;
