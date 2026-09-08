@@ -33,7 +33,7 @@ def reset_system_to_default():
         del st.session_state[key]
     st.rerun()
 
-# --- تهيئة إعدادات العميل والنسخة (بيانات المشتري والتخصيص) ---
+# --- تهيئة إعدادات العميل والنسخة ---
 if 'client_license_config' not in st.session_state:
     st.session_state['client_license_config'] = {
         "client_name": "شركة الإنجاز للمقاولات العامة والتجارة",
@@ -357,7 +357,7 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
     html_code += "</tbody></table></div>"
     st.markdown(html_code, unsafe_allow_html=True)
 
-# --- القائمة الجانبية ---
+# --- القائمة الجانبية الرئيسية (مختصرة ونظيفة) ---
 with st.sidebar:
     client_conf = st.session_state['client_license_config']
     st.markdown(f"<h2 style='color: #714B67; text-align: center;'>نظام أفق ERP</h2>", unsafe_allow_html=True)
@@ -398,41 +398,6 @@ with st.sidebar:
     ])
     
     main_menu = st.selectbox("اختر النظام الرئيسي:", menu_options)
-    
-    hr_sub_menu = "سجل الموظفين الشامل"
-    if main_menu == "إدارة الموارد البشرية (HR)":
-        st.markdown("---")
-        hr_sub_menu = st.radio("خيارات الموارد البشرية:", ["سجل الموظفين الشامل", "إضافة موظف جديد", "متابعة الحضور والانصراف", "إدارة الإجازات والطلبات", "مسير الرواتب والأجور (Payroll)"])
-
-    production_sub_menu = "أوامر الإنتاج"
-    if main_menu == "إدارة الإنتاج والمصنع/المطبخ":
-        st.markdown("---")
-        production_sub_menu = st.radio("خيارات الإنتاج:", ["أوامر الإنتاج النشطة", "إضافة أمر إنتاج جديد", "أوامر الإنتاج المكتملة"])
-
-    projects_sub_menu = "قائمة المشاريع"
-    if main_menu == "إدارة المشاريع":
-        st.markdown("---")
-        projects_sub_menu = st.radio("خيارات المشاريع:", ["قائمة المشاريع", "إضافة مشروع جديد"])
-
-    cost_centers_sub_menu = "مراكز التكلفة الشاملة"
-    if main_menu == "إدارة مراكز التكلفة":
-        st.markdown("---")
-        cost_centers_sub_menu = st.radio("خيارات مراكز التكلفة:", ["مراكز التكلفة الشاملة", "إضافة مركز تكلفة جديد"])
-
-    users_sub_menu = "قائمة المستخدمين والصلاحيات"
-    if main_menu == "إدارة الصلاحيات والمستخدمين":
-        st.markdown("---")
-        users_sub_menu = st.radio("خيارات الصلاحيات:", ["قائمة المستخدمين والصلاحيات", "إضافة مستخدم جديد"])
-
-    inventory_sub_menu = "أرصدة المخزون الحالية"
-    if main_menu == "نظام المخزون (الجرد المستمر)":
-        st.markdown("---")
-        inventory_sub_menu = st.radio("خيارات المخزون:", ["أرصدة المخزون الحالية", "إضافة صنف جديد بالمخزن"])
-
-    accounting_sub_menu = "شجرة الحسابات الكاملة"
-    if main_menu == "النظام المحاسبي والشجرة":
-        st.markdown("---")
-        accounting_sub_menu = st.radio("خيارات النظام المحاسبي:", ["شجرة الحسابات الكاملة", "قيود اليومية", "دفتر الأستاذ العام"])
 
     st.markdown("---")
     st.markdown("<p style='font-size: 10px; color: #714B67; text-align: center;'>جميع الحقوق محفوظة © أفق 2026</p>", unsafe_allow_html=True)
@@ -497,13 +462,23 @@ elif main_menu == "إدارة شركاء النجاح (العملاء والمو
                 else:
                     st.error("يرجى إدخال الكود والاسم على الأقل.")
 
-# --- إدارة الموارد البشرية ---
+# --- إدارة الموارد البشرية (تم تحويل القوائم إلى Tabs أفقية) ---
 elif main_menu == "إدارة الموارد البشرية (HR)":
     st.markdown("<h3 style='color: #714B67;'>👥 إدارة الموارد البشرية (HR)</h3>", unsafe_allow_html=True)
-    if hr_sub_menu == "سجل الموظفين الشامل":
+    
+    hr_tab1, hr_tab2, hr_tab3, hr_tab4, hr_tab5 = st.tabs([
+        "📋 سجل الموظفين الشامل", 
+        "➕ إضافة موظف جديد", 
+        "⏰ متابعة الحضور والانصراف", 
+        "🏖️ إدارة الإجازات والطلبات", 
+        "💰 مسير الرواتب والأجور (Payroll)"
+    ])
+    
+    with hr_tab1:
         emp_rows = [{"رقم الموظف": k, "الاسم": v["الاسم الكامل"], "القسم": v["القسم"], "المسمى": v["المسمى الوظيفي"], "الراتب": v["الراتب الأساسي"]} for k, v in st.session_state['hr_employees_db'].items()]
         render_arabic_table_with_controls(pd.DataFrame(emp_rows), "الموظفين")
-    elif hr_sub_menu == "إضافة موظف جديد":
+        
+    with hr_tab2:
         with st.form("add_emp"):
             e_id = st.text_input("رقم الموظف (مثال: EMP-104)")
             e_name = st.text_input("الاسم الكامل للموظف")
@@ -515,20 +490,31 @@ elif main_menu == "إدارة الموارد البشرية (HR)":
                     st.session_state['hr_employees_db'][e_id] = {"الاسم الكامل": e_name, "القسم": e_dept, "المسمى الوظيفي": e_title, "الراتب الأساسي": e_sal, "الحالة": "على رأس العمل"}
                     st.success("تم إضافة الموظف بنجاح!")
                     st.rerun()
-    elif hr_sub_menu == "متابعة الحضور والانصراف":
+                    
+    with hr_tab3:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['hr_attendance']), "الحضور")
-    elif hr_sub_menu == "إدارة الإجازات والطلبات":
+        
+    with hr_tab4:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['hr_leaves']), "الإجازات")
-    elif hr_sub_menu == "مسير الرواتب والأجور (Payroll)":
+        
+    with hr_tab5:
         sal_rows = [{"رقم الموظف": k, "الاسم": v["الاسم الكامل"], "الصافي المستحق": v["الراتب الأساسي"] + v.get("بدل السكن", 0)} for k, v in st.session_state['hr_employees_db'].items()]
         render_arabic_table_with_controls(pd.DataFrame(sal_rows), "مسير_الرواتب")
 
-# --- إدارة الإنتاج ---
+# --- إدارة الإنتاج (تم تحويل القوائم إلى Tabs أفقية) ---
 elif main_menu == "إدارة الإنتاج والمصنع/المطبخ":
     st.markdown("<h3 style='color: #714B67;'>🏭 إدارة الإنتاج والمصنع/المطبخ</h3>", unsafe_allow_html=True)
-    if production_sub_menu == "أوامر الإنتاج النشطة":
+    
+    prod_tab1, prod_tab2, prod_tab3 = st.tabs([
+        "⚙️ أوامر الإنتاج النشطة", 
+        "➕ إضافة أمر إنتاج جديد", 
+        "✅ أوامر الإنتاج المكتملة"
+    ])
+    
+    with prod_tab1:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['production_orders']), "أوامر_الإنتاج")
-    elif production_sub_menu == "إضافة أمر إنتاج جديد":
+        
+    with prod_tab2:
         with st.form("new_prod"):
             p_item = st.text_input("اسم المنتج / الوجبة المصنعة")
             p_qty = st.number_input("الكمية المطلوبة للإنتاج", value=10)
@@ -537,15 +523,23 @@ elif main_menu == "إدارة الإنتاج والمصنع/المطبخ":
                     st.session_state['production_orders'].append({"رقم الأمر": f"PRD-{len(st.session_state['production_orders'])+1:03d}", "اسم المنتج": p_item, "الكمية المطلوبة": p_qty, "الحالة": "قيد التنفيذ"})
                     st.success("تم إصدار أمر الإنتاج بنجاح!")
                     st.rerun()
-    else:
+                    
+    with prod_tab3:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['production_orders']), "أوامر_مكتملة")
 
-# --- إدارة المشاريع ---
+# --- إدارة المشاريع (تم تحويل القوائم إلى Tabs أفقية) ---
 elif main_menu == "إدارة المشاريع":
     st.markdown("<h3 style='color: #714B67;'>📊 إدارة المشاريع</h3>", unsafe_allow_html=True)
-    if projects_sub_menu == "قائمة المشاريع":
+    
+    proj_tab1, proj_tab2 = st.tabs([
+        "📋 قائمة المشاريع", 
+        "➕ إضافة مشروع جديد"
+    ])
+    
+    with proj_tab1:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['projects_db']), "المشاريع")
-    else:
+        
+    with proj_tab2:
         with st.form("add_proj"):
             pr_id = st.text_input("رقم المشروع (مثال: PRJ-03)")
             pr_name = st.text_input("اسم المشروع")
@@ -555,12 +549,19 @@ elif main_menu == "إدارة المشاريع":
                 st.success("تم إضافة المشروع بنجاح!")
                 st.rerun()
 
-# --- مراكز التكلفة ---
+# --- مراكز التكلفة (تم تحويل القوائم إلى Tabs أفقية) ---
 elif main_menu == "إدارة مراكز التكلفة":
     st.markdown("<h3 style='color: #714B67;'>🏷️ إدارة مراكز التكلفة</h3>", unsafe_allow_html=True)
-    if cost_centers_sub_menu == "مراكز التكلفة الشاملة":
+    
+    cc_tab1, cc_tab2 = st.tabs([
+        "📋 مراكز التكلفة الشاملة", 
+        "➕ إضافة مركز تكلفة جديد"
+    ])
+    
+    with cc_tab1:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['cost_centers_db']), "مراكز_التكلفة")
-    else:
+        
+    with cc_tab2:
         with st.form("add_cc"):
             cc_id = st.text_input("رمز المركز (مثال: CC-103)")
             cc_name = st.text_input("اسم مركز التكلفة")
@@ -569,12 +570,19 @@ elif main_menu == "إدارة مراكز التكلفة":
                 st.success("تم الحفظ بنجاح!")
                 st.rerun()
 
-# --- إدارة الصلاحيات والمستخدمين ---
+# --- إدارة الصلاحيات والمستخدمين (تم تحويل القوائم إلى Tabs أفقية) ---
 elif main_menu == "إدارة الصلاحيات والمستخدمين":
     st.markdown("<h3 style='color: #714B67;'>🔐 إدارة الصلاحيات والمستخدمين</h3>", unsafe_allow_html=True)
-    if users_sub_menu == "قائمة المستخدمين والصلاحيات":
+    
+    usr_tab1, usr_tab2 = st.tabs([
+        "👥 قائمة المستخدمين والصلاحيات", 
+        "➕ إضافة مستخدم جديد"
+    ])
+    
+    with usr_tab1:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['users_permissions_db']), "المستخدمين")
-    else:
+        
+    with usr_tab2:
         with st.form("add_usr"):
             u_name = st.text_input("اسم المستخدم")
             u_full = st.text_input("الاسم الكامل")
@@ -645,13 +653,20 @@ elif main_menu == "إدارة المشتريات المتكاملة":
                 st.success("تم تسجيل المشتريات وترحيل القيد بنجاح!")
                 st.rerun()
 
-# --- نظام المخزون ---
+# --- نظام المخزون (تم تحويل القوائم إلى Tabs أفقية) ---
 elif main_menu == "نظام المخزون (الجرد المستمر)":
     st.markdown("<h3 style='color: #714B67;'>📦 نظام المخزون والجرد المستمر</h3>", unsafe_allow_html=True)
-    if inventory_sub_menu == "أرصدة المخزون الحالية":
+    
+    inv_tab1, inv_tab2 = st.tabs([
+        "📋 أرصدة المخزون الحالية", 
+        "➕ إضافة صنف جديد بالمخزن"
+    ])
+    
+    with inv_tab1:
         stock_rows = [{"الصنف": k, "النوع": v.get("نوع المخزون"), "الكمية": v["الكمية"], "سعر الشراء": v["سعر الشراء"]} for k, v in st.session_state['inventory_stock'].items()]
         render_arabic_table_with_controls(pd.DataFrame(stock_rows), "المخزون")
-    else:
+        
+    with inv_tab2:
         with st.form("add_item"):
             it_name = st.text_input("اسم الصنف الجديد")
             it_qty = st.number_input("الكمية الأولية", value=10)
@@ -662,19 +677,28 @@ elif main_menu == "نظام المخزون (الجرد المستمر)":
                     st.success("تم إضافة الصنف للمخزن بنجاح!")
                     st.rerun()
 
-# --- النظام المحاسبي والشجرة ---
+# --- النظام المحاسبي والشجرة (تم تحويل القوائم إلى Tabs أفقية) ---
 elif main_menu == "النظام المحاسبي والشجرة":
     st.markdown("<h3 style='color: #714B67;'>📊 النظام المحاسبي والشجرة والقيود</h3>", unsafe_allow_html=True)
-    if accounting_sub_menu == "شجرة الحسابات الكاملة":
+    
+    acc_tab1, acc_tab2, acc_tab3 = st.tabs([
+        "🌳 شجرة الحسابات الكاملة", 
+        "📝 قيود اليومية", 
+        "📖 دفتر الأستاذ العام"
+    ])
+    
+    with acc_tab1:
         tree_rows = []
         for main_cat, main_data in st.session_state['accounts_tree_hierarchical'].items():
             for sub_cat, sub_data in main_data["sub"].items():
                 for item_name, balance in sub_data["items"].items():
                     tree_rows.append({"التصنيف الرئيسي": main_cat, "التصنيف الفرعي": sub_cat, "الحساب": item_name, "الرصيد": balance})
         render_arabic_table_with_controls(pd.DataFrame(tree_rows), "شجرة_الحسابات")
-    elif accounting_sub_menu == "قيود اليومية":
+        
+    with acc_tab2:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "قيود_اليومية")
-    else:
+        
+    with acc_tab3:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "دفتر_الأستاذ")
 
 # --- إعدادات ترخيص العميل والنسخ الاحتياطي ---
