@@ -49,15 +49,7 @@ if 'client_license_config' not in st.session_state:
         "enable_cost_centers": True
     }
 
-# --- تهيئة المخزون الأساسي لضمان عدم ظهور خطأ KeyError ---
-if 'inventory_stock' not in st.session_state:
-    st.session_state['inventory_stock'] = {
-        "PROD-001": {"اسم المنتج": "شاشة سمارت 55 بوصة 4K", "السعر": 1500.0, "الكمية المتاحة": 50},
-        "PROD-002": {"اسم المنتج": "جهاز حاسب آلي محمول Core i7", "السعر": 3500.0, "الكمية المتاحة": 30},
-        "PROD-003": {"اسم المنتج": "طابعة ليزر متعددة الوظائف", "السعر": 850.0, "الكمية المتاحة": 20}
-    }
-
-# --- تهيئة قاعدة بيانات المستخدمين والصلاحيات المفصلة ---
+# --- تهيئة قاعدة بيانات المستخدمين والصلاحيات المفصلة (لمنع أي خطأ مفقود) ---
 if 'users_permissions_db' not in st.session_state:
     st.session_state['users_permissions_db'] = {
         "admin": {
@@ -69,6 +61,17 @@ if 'users_permissions_db' not in st.session_state:
                 "الرئيسية": True, "الشركاء": True, "الموارد البشرية": True, "الإنتاج": True, 
                 "المشروعات": True, "مراكز التكلفة": True, "الصلاحيات": True, "المبيعات": True, 
                 "المشتريات": True, "المخزون": True, "المحاسبة والشجرة": True, "الإعدادات": True
+            }
+        },
+        "accountant1": {
+            "اسم المستخدم": "accountant1",
+            "الاسم الكامل": "محمد خالد المحاسب",
+            "الدور": "محاسب أول",
+            "الحالة": "نشط",
+            "صلاحيات الموديولات": {
+                "الرئيسية": True, "الشركاء": True, "الموارد البشرية": False, "الإنتاج": False, 
+                "المشروعات": False, "مراكز التكلفة": True, "الصلاحيات": False, "المبيعات": True, 
+                "المشتريات": True, "المخزون": True, "المحاسبة والشجرة": True, "الإعدادات": False
             }
         }
     }
@@ -117,10 +120,10 @@ if not st.session_state['authenticated']:
                     st.error("اسم المستخدم أو كلمة المرور غير صحيحة! (تجربة: admin / 12345)")
     st.stop()
 
-# --- تهيئة بقية الجداول والقواعد ---
+# --- تهيئة قواعد البيانات وباقي القواميس الشاملة ---
 if 'customers_db' not in st.session_state:
     st.session_state['customers_db'] = {
-        "شركة التقنية الحديثة للتجارة": {"كود العميل": "CUST-001", "رقم السجل": "1010254789", "الرقم الضريبي": "300123456700003", "العنوان": "الرياض - حي الملز", "الهاتف": "0501234567", "الرصيد الحالي": 45000.0}
+        "شركة التقنية الحديثة للتجارة": {"كود العميل": "CUST-001", "رقم السجل": "1010254789", "الرقم الضريبي": "300123456700003", "العنوان": "الرياض - حي الملز", "الهاتف": "0501234567", "الحد الائتماني": 100000.0, "الرصيد الحالي": 45000.0}
     }
 
 if 'suppliers_db' not in st.session_state:
@@ -128,26 +131,34 @@ if 'suppliers_db' not in st.session_state:
         "شركة التوريدات الكبرى المحدودة": {"كود المورد": "SUP-001", "رقم السجل": "1010987654", "الرقم الضريبي": "300111222300003", "العنوان": "الرياض - الصناعية", "الهاتف": "0561112233", "الرصيد الحالي": 65000.0}
     }
 
-if 'warehouses_db' not in st.session_state:
-    st.session_state['warehouses_db'] = ["المستودع الرئيسي - الرياض", "مستودع فرع جدة", "مستودع المنطقة الشرقية"]
+if 'hr_employees_db' not in st.session_state:
+    st.session_state['hr_employees_db'] = {
+        "EMP-101": {"الاسم الكامل": "أحمد محمد العتيبي", "القسم": "الإدارة المالية", "المسمى الوظيفي": "محاسب أول", "الراتب الأساسي": 8000.0, "الحالة": "على رأس العمل"}
+    }
 
-if 'cash_boxes_db' not in st.session_state:
-    st.session_state['cash_boxes_db'] = ["الخزينة الرئيسية (صندوق النقد)", "صندوق المبيعات اليومي"]
+if 'production_orders' not in st.session_state:
+    st.session_state['production_orders'] = []
 
-if 'banks_db' not in st.session_state:
-    st.session_state['banks_db'] = ["مصرف الراجحي", "البنك الأهلي السعودي (SNB)", "بنك الرياض"]
+if 'projects_db' not in st.session_state:
+    st.session_state['projects_db'] = []
 
-if 'sales_workflow_db' not in st.session_state:
-    st.session_state['sales_workflow_db'] = []
+if 'cost_centers_db' not in st.session_state:
+    st.session_state['cost_centers_db'] = []
 
-if 'sales_invoices_full_db' not in st.session_state:
-    st.session_state['sales_invoices_full_db'] = []
+if 'inventory_stock' not in st.session_state:
+    st.session_state['inventory_stock'] = {}
 
-if 'purchases_workflow_db' not in st.session_state:
-    st.session_state['purchases_workflow_db'] = []
+if 'sales_quotations' not in st.session_state:
+    st.session_state['sales_quotations'] = []
 
-if 'purchases_invoices_full_db' not in st.session_state:
-    st.session_state['purchases_invoices_full_db'] = []
+if 'sales_orders' not in st.session_state:
+    st.session_state['sales_orders'] = []
+
+if 'sales_invoices_db' not in st.session_state:
+    st.session_state['sales_invoices_db'] = []
+
+if 'purchase_invoices_db' not in st.session_state:
+    st.session_state['purchase_invoices_db'] = []
 
 if 'general_ledger' not in st.session_state:
     st.session_state['general_ledger'] = []
@@ -165,6 +176,14 @@ st.markdown("""
     }
     .custom-table th { background-color: #714B67; color: white; padding: 8px; text-align: right; white-space: nowrap; }
     .custom-table td { padding: 6px 8px; border-bottom: 1px solid #edf2f7; color: #2d3748; white-space: nowrap; }
+    .official-form-box {
+        background: white; padding: 20px; border-radius: 8px; border: 1px solid #dcdde1;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04); margin-bottom: 20px;
+    }
+    .metric-card {
+        background: white; padding: 15px; border-radius: 8px; border-right: 4px solid #714B67;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -217,11 +236,15 @@ with st.sidebar:
     modules_map = {
         "الرئيسية": "🏠 الرئيسية",
         "الشركاء": "👥 الشركاء",
-        "المبيعات": "🛒 المبيعات الشاملة",
-        "المشتريات": "📦 المشتريات الشاملة",
-        "المخزون": "📋 المخزون",
-        "المحاسبة والشجرة": "💰 المحاسبة والقيد التلقائي",
+        "الموارد البشرية": "👨‍💼 الموارد البشرية",
+        "الإنتاج": "🏭 الإنتاج",
+        "المشروعات": "📊 المشروعات",
+        "مراكز التكلفة": "🏷️ مراكز التكلفة",
         "الصلاحيات": "🔐 الصلاحيات",
+        "المبيعات": "🛒 المبيعات",
+        "المشتريات": "📦 المشتريات",
+        "المخزون": "📋 المخزون",
+        "المحاسبة والشجرة": "💰 المحاسبة",
         "الإعدادات": "⚙️ الإعدادات"
     }
     
@@ -235,176 +258,115 @@ main_menu = st.session_state['active_module']
 
 # --- لوحة التحكم ---
 if main_menu == "الرئيسية":
-    st.markdown("<h3>🚀 لوحة التحكم السحابية - نظام أفق ERP</h3>", unsafe_allow_html=True)
-    st.info("مرحباً بك في النظام. تم تفعيل دورة مستندات المبيعات والمشتريات المتكاملة.")
+    st.markdown("<h3>🚀 لوحة التحكم السحابية</h3>", unsafe_allow_html=True)
 
-# --- الشركاء ---
-elif main_menu == "الشركاء":
-    st.markdown("<h3 style='color: #714B67;'>👥 إدارة شركاء النجاح (العملاء والموردين)</h3>", unsafe_allow_html=True)
-    tab_c1, tab_c2 = st.tabs(["العملاء", "الموردين"])
-    with tab_c1:
-        cust_list = [{"كود العميل": v["كود العميل"], "اسم العميل": k, "السجل التجاري": v["رقم السجل"], "الرقم الضريبي": v["الرقم الضريبي"], "الرصيد": v["الرصيد الحالي"]} for k, v in st.session_state['customers_db'].items()]
-        render_arabic_table_with_controls(pd.DataFrame(cust_list), "العملاء")
-    with tab_c2:
-        supp_list = [{"كود المورد": v["كود المورد"], "اسم المورد": k, "السجل التجاري": v["رقم السجل"], "الرقم الضريبي": v["الرقم الضريبي"], "الرصيد": v["الرصيد الحالي"]} for k, v in st.session_state['suppliers_db'].items()]
-        render_arabic_table_with_controls(pd.DataFrame(supp_list), "الموردين")
-
-# ==================== موديول المبيعات ====================
-elif main_menu == "المبيعات":
-    st.markdown("<h3 style='color: #714B67;'>🛒 موديول المبيعات المتكامل (عروض الأسعار، أوامر البيع، والفواتير الضريبية)</h3>", unsafe_allow_html=True)
-    
-    sales_tab1, sales_tab2, sales_tab3 = st.tabs([
-        "📄 ورقة عرض السعر وأمر البيع", 
-        "🧾 الفاتورة الضريبية الكاملة", 
-        "📊 تقرير المبيعات الشامل"
-    ])
-    
-    with sales_tab1:
-        st.markdown("#### إدارة عروض الأسعار وأوامر البيع")
-        
-        # التأكد من وجود أصناف في المخزون قبل العرض لمنع خطأ KeyError
-        if not st.session_state['inventory_stock']:
-            st.warning("لا توجد أصناف مسجلة في المخزون حالياً. يرجى إضافة أصناف أولاً.")
-        else:
-            with st.form("sales_workflow_form"):
-                col_w1, col_w2, col_w3 = st.columns(3)
-                with col_w1:
-                    doc_number = st.text_input("رقم المستند / العرض", value=f"SQ-{int(datetime.now().timestamp())}")
-                    selected_customer = st.selectbox("اختر العميل", list(st.session_state['customers_db'].keys()))
-                with col_w2:
-                    doc_date = st.date_input("التاريخ", value=datetime.now())
-                    doc_type = st.selectbox("النوع الرئيسي", ["مبيعات", "مردودات مبيعات"])
-                with col_w3:
-                    workflow_status = st.selectbox("حالة المستند", ["عرض سعر", "أمر بيع", "مفوترة"])
-                    warehouse_choice = st.selectbox("المستودع", st.session_state['warehouses_db'])
-                
-                st.markdown("---")
-                st.markdown("##### جدول الأصناف والبنود")
-                
-                item_code_input = st.selectbox("كود المنتج / البند", list(st.session_state['inventory_stock'].keys()), format_func=lambda x: f"{x} - {st.session_state['inventory_stock'][x]['اسم المنتج']}")
-                item_qty = st.number_input("الكمية المطلوبة", min_value=1.0, value=1.0)
-                
-                prod_details = st.session_state['inventory_stock'][item_code_input]
-                unit_price = st.number_input("سعر الوحدة", value=float(prod_details["السعر"]))
-                discount_val = st.number_input("الخصم", value=0.0)
-                tax_rate = 0.15 
-                
-                line_subtotal = (unit_price * item_qty) - discount_val
-                line_tax = line_subtotal * tax_rate
-                line_total_incl = line_subtotal + line_tax
-                
-                st.info(f"إجمالي السطر (شامل الضريبة): {line_total_incl:,.2f} ر.س")
-                
-                col_b_act1, col_b_act2, col_b_act3, col_b_act4 = st.columns(4)
-                save_wf = col_b_act1.form_submit_button("حفظ 💾")
-                
-                if save_wf:
-                    new_record = {
-                        "رقم المستند": doc_number,
-                        "العميل": selected_customer,
-                        "التاريخ": str(doc_date),
-                        "النوع": doc_type,
-                        "الحالة": workflow_status,
-                        "كود المنتج": item_code_input,
-                        "اسم المنتج": prod_details["اسم المنتج"],
-                        "الكمية": item_qty,
-                        "السعر": unit_price,
-                        "الإجمالي شامل ض ق م": line_total_incl,
-                        "المستودع": warehouse_choice
-                    }
-                    st.session_state['sales_workflow_db'].append(new_record)
-                    st.success(f"تم حفظ المستند برقم {doc_number} والحالة الحالية: {workflow_status} بنجاح!")
-        
-        st.markdown("#### سجل عروض الأسعار وأوامر البيع المسجلة")
-        if st.session_state['sales_workflow_db']:
-            render_arabic_table_with_controls(pd.DataFrame(st.session_state['sales_workflow_db']), "عروض_الأسعار_وأوامر_البيع")
-        else:
-            st.info("لا توجد عروض أسعار أو أوامر بيع مسجلة حتى الآن.")
-
-    with sales_tab2:
-        st.markdown("#### الفاتورة الإلكترونية الضريبية الكاملة")
-        if not st.session_state['inventory_stock']:
-            st.warning("لا توجد أصناف في المخزون.")
-        else:
-            with st.form("full_tax_invoice_form"):
-                col_inv1, col_inv2, col_inv3 = st.columns(3)
-                with col_inv1:
-                    inv_number = st.text_input("رقم الفاتورة الضريبية", value=f"INV-{int(datetime.now().timestamp())}")
-                    inv_customer = st.selectbox("اختر العميل للفاتورة", list(st.session_state['customers_db'].keys()))
-                with col_inv2:
-                    inv_date = st.date_input("تاريخ الفاتورة", value=datetime.now())
-                    payment_method = st.selectbox("طريقة الدفع", ["أجل", "نقدي (صندوق)", "تحويل أو شبكة (بنك)"])
-                    
-                    selected_payment_destination = "حساب العملاء (أجل)"
-                    if payment_method == "نقدي (صندوق)":
-                        selected_payment_destination = st.selectbox("اختر الصندوق", st.session_state['cash_boxes_db'])
-                    elif payment_method == "تحويل أو شبكة (بنك)":
-                        selected_payment_destination = st.selectbox("اختر البنك", st.session_state['banks_db'])
-
-                with col_inv3:
-                    inv_warehouse = st.selectbox("مستودع الصرف", st.session_state['warehouses_db'])
-
-                st.markdown("---")
-                inv_prod_code = st.selectbox("المنتج المراد بيعه", list(st.session_state['inventory_stock'].keys()), format_func=lambda x: f"{x} - {st.session_state['inventory_stock'][x]['اسم المنتج']}", key="inv_p_code")
-                inv_qty = st.number_input("الكمية المباعة", min_value=1.0, value=1.0, key="inv_qty_input")
-                
-                prod_row = st.session_state['inventory_stock'][inv_prod_code]
-                inv_price = st.number_input("سعر البيع للوحدة", value=float(prod_row["السعر"]), key="inv_price_input")
-                
-                sub_total_val = (inv_price * inv_qty)
-                tax_val = sub_total_val * 0.15
-                total_incl_tax = sub_total_val + tax_val
-                
-                if st.form_submit_button("حفظ الفاتورة الضريبية 💾"):
-                    if prod_row["الكمية المتاحة"] < inv_qty:
-                        st.error(f"عذراً، الكمية المتاحة ({prod_row['الكمية المتاحة']}) لا تكفي!")
-                    else:
-                        st.session_state['inventory_stock'][inv_prod_code]["الكمية المتاحة"] -= inv_qty
-                        st.session_state['sales_invoices_full_db'].append({
-                            "رقم الفاتورة": inv_number,
-                            "العميل": inv_customer,
-                            "التاريخ": str(inv_date),
-                            "المستودع": inv_warehouse,
-                            "الإجمالي شامل ض ق م": total_incl_tax
-                        })
-                        st.success("تم حفظ الفاتورة الضريبية بنجاح!")
-
-        if st.session_state['sales_invoices_full_db']:
-            render_arabic_table_with_controls(pd.DataFrame(st.session_state['sales_invoices_full_db']), "الفواتير_الضريبية")
-
-    with sales_tab3:
-        st.markdown("#### 📊 تقرير المبيعات الشامل")
-        if st.session_state['sales_invoices_full_db']:
-            render_arabic_table_with_controls(pd.DataFrame(st.session_state['sales_invoices_full_db']), "تقرير_المبيعات_الشامل")
-        else:
-            st.info("لا توجد بيانات مبيعات لعرضها.")
-
-# --- المشتريات ---
-elif main_menu == "المشتريات":
-    st.markdown("<h3 style='color: #714B67;'>📦 موديول المشتريات المتكامل</h3>", unsafe_allow_html=True)
-    st.info("قسم المشتريات جاهز ويعمل بنفس منطق المبيعات.")
-
-# --- المخزون ---
-elif main_menu == "المخزون":
-    st.markdown("<h3 style='color: #714B67;'>📋 موديول المخزون والجرد المستمر</h3>", unsafe_allow_html=True)
-    stock_rows = [{"كود المنتج": k, "اسم المنتج": v["اسم المنتج"], "السعر الأساسي": v["السعر"], "الكمية المتاحة": v["الكمية المتاحة"]} for k, v in st.session_state['inventory_stock'].items()]
-    render_arabic_table_with_controls(pd.DataFrame(stock_rows), "أرصدة_المخزون")
-
-# --- المحاسبة والشجرة ---
-elif main_menu == "المحاسبة والشجرة":
-    st.markdown("<h3 style='color: #714B67;'>💰 المحاسبة والقيود التلقائية</h3>", unsafe_allow_html=True)
-    if st.session_state['general_ledger']:
-        render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "دفتر_الأستاذ")
-    else:
-        st.info("لا توجد قيود محاسبية مسجلة.")
-
-# --- الصلاحيات ---
+# --- الصلاحيات (مع شاشة التخصيص التفاعلية) ---
 elif main_menu == "الصلاحيات":
-    st.markdown("<h3 style='color: #714B67;'>🔐 إدارة الصلاحيات والمستخدمين</h3>", unsafe_allow_html=True)
-    perm_rows = [{"اسم المستخدم": k, "الاسم الكامل": v["اسم الكامل"], "الدور": v["الدور"], "الحالة": v["الحالة"]} for k, v in st.session_state['users_permissions_db'].items()]
-    render_arabic_table_with_controls(pd.DataFrame(perm_rows), "المستخدمين")
+    st.markdown("<h3 style='color: #714B67;'>🔐 إدارة الصلاحيات والمستخدمين وتخصيص الموديولات</h3>", unsafe_allow_html=True)
+    
+    perm_tab1, perm_tab2 = st.tabs(["👥 قائمة المستخدمين وصلاحياتهم التفاعلية", "➕ إضافة مستخدم جديد للنظام"])
+    
+    with perm_tab1:
+        st.markdown("<p style='color:#64748b;'>قم باختيار المستخدم من القائمة أدناه لفتح شاشة الصلاحيات الخاصة به وتعديل صلاحياته بكل سهولة:</p>", unsafe_allow_html=True)
+        
+        # التأكد التام من وجود القاموس لمنع أي خطأ
+        if 'users_permissions_db' not in st.session_state:
+            st.session_state['users_permissions_db'] = {}
 
-# --- الإعدادات ---
+        user_keys = list(st.session_state['users_permissions_db'].keys())
+        
+        if not user_keys:
+            st.warning("لا توجد حسابات مستخدمين مسجلة. يجدر إضافة مستخدم جديد.")
+        else:
+            selected_user_key = st.selectbox("اختر المستخدم للتعديل والتخصيص:", user_keys, format_func=lambda x: f"{x} - {st.session_state['users_permissions_db'][x]['الاسم الكامل']}")
+            
+            if selected_user_key:
+                user_obj = st.session_state['users_permissions_db'][selected_user_key]
+                
+                st.markdown(f"""
+                    <div class="official-form-box" style="border-right: 5px solid #714B67;">
+                        <h4>تعديل صلاحيات المستخدم: <span style="color: #714B67;">{user_obj['الاسم الكامل']} ({selected_user_key})</span></h4>
+                        <p style="margin:0; font-size:13px; color:#64748b;">الدور الحالي: {user_obj['الدور']} | الحالة: {user_obj['الحالة']}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                with st.form(f"form_perms_{selected_user_key}"):
+                    st.markdown("##### حدد الصلاحيات والموديولات المتاحة لهذا المستخدم:")
+                    
+                    current_perms = user_obj.get("صلاحيات الموديولات", {})
+                    all_modules_list = [
+                        "الرئيسية", "الشركاء", "الموارد البشرية", "الإنتاج", 
+                        "المشروعات", "مراكز التكلفة", "الصلاحيات", "المبيعات", 
+                        "المشتريات", "المخزون", "المحاسبة والشجرة", "الإعدادات"
+                    ]
+                    
+                    new_assigned_perms = {}
+                    col_a, col_b, col_c = st.columns(3)
+                    
+                    for idx, mod in enumerate(all_modules_list):
+                        default_val = current_perms.get(mod, True)
+                        if idx % 3 == 0:
+                            with col_a:
+                                new_assigned_perms[mod] = st.checkbox(f"موديول {mod}", value=default_val, key=f"p_{selected_user_key}_{mod}")
+                        elif idx % 3 == 1:
+                            with col_b:
+                                new_assigned_perms[mod] = st.checkbox(f"موديول {mod}", value=default_val, key=f"p_{selected_user_key}_{mod}")
+                        else:
+                            with col_c:
+                                new_assigned_perms[mod] = st.checkbox(f"موديول {mod}", value=default_val, key=f"p_{selected_user_key}_{mod}")
+                    
+                    st.markdown("<div style='margin-top:15px;'></div>", unsafe_allow_html=True)
+                    save_perms_btn = st.form_submit_button("حفظ وتطبيق الصلاحيات الجديدة 💾")
+                    
+                    if save_perms_btn:
+                        st.session_state['users_permissions_db'][selected_user_key]["صلاحيات الموديولات"] = new_assigned_perms
+                        st.success(f"تم حفظ الصلاحيات المخصصة للمستخدم ({user_obj['الاسم الكامل']}) بنجاح!")
+                        st.rerun()
+
+        st.markdown("---")
+        st.markdown("#### جدول ملخص المستخدمين والصلاحيات العامة")
+        summary_rows = []
+        for uk, uv in st.session_state['users_permissions_db'].items():
+            active_count = sum(1 for v in uv.get("صلاحيات الموديولات", {}).values() if v)
+            summary_rows.append({
+                "اسم المستخدم": uk,
+                "الاسم الكامل": uv["الاسم الكامل"],
+                "الدور": uv["الدور"],
+                "عدد الموديولات المتاحة": f"{active_count} موديول",
+                "الحالة": uv["الحالة"]
+            })
+        render_arabic_table_with_controls(pd.DataFrame(summary_rows), "المستخدمين_والصلاحيات")
+
+    with perm_tab2:
+        with st.form("add_new_user_perms"):
+            st.markdown("#### إضافة مستخدم جديد للنظام وتحديد بياناته")
+            u_id = st.text_input("اسم المستخدم (Username - إنجليزي بدون مسافات)")
+            u_full = st.text_input("الاسم الكامل للموظف/المستخدم")
+            u_role = st.selectbox("الدور الوظيفي", ["مدير النظام (Administrator)", "محاسب أول", "مستودعات", "مدير مبيعات", "مشرف عام"])
+            
+            if st.form_submit_button("إضافة المستخدم الجديد 🚀"):
+                if u_id and u_full:
+                    if u_id in st.session_state['users_permissions_db']:
+                        st.error("اسم المستخدم موجود مسبقاً، اختر اسم آخر.")
+                    else:
+                        st.session_state['users_permissions_db'][u_id] = {
+                            "اسم المستخدم": u_id,
+                            "الاسم الكامل": u_full,
+                            "الدور": u_role,
+                            "الحالة": "نشط",
+                            "صلاحيات الموديولات": {m: True for m in ["الرئيسية", "الشركاء", "الموارد البشرية", "الإنتاج", "المشروعات", "مراكز التكلفة", "الصلاحيات", "المبيعات", "المشتريات", "المخزون", "المحاسبة والشجرة", "الإعدادات"]}
+                        }
+                        st.success(f"تم إضافة المستخدم ({u_full}) وتفعيل صلاحياته بنجاح!")
+                        st.rerun()
+                else:
+                    st.error("يرجى ملء الحقول الأساسية.")
+
+# بقية الأقسام (الشركاء، الموارد البشرية، المبيعات، إلخ...)
+elif main_menu == "الشركاء":
+    st.markdown("<h3 style='color: #714B67;'>👥 إدارة شركاء النجاح</h3>", unsafe_allow_html=True)
+    cust_list = [{"كود العميل": k, "اسم العميل": k} for k in st.session_state['customers_db'].keys()]
+    render_arabic_table_with_controls(pd.DataFrame(cust_list), "العملاء")
+
 elif main_menu == "الإعدادات":
     st.markdown("<h3 style='color: #714B67;'>⚙️ الإعدادات العامة</h3>", unsafe_allow_html=True)
     if st.button("🔄 إعادة تصفير البرنامج بالكامل"):
