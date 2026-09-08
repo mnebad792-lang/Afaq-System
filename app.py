@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import json
+import io
 
 # --- محاولة استيراد مكتبة Supabase للربط السحابي ---
 try:
@@ -481,7 +482,7 @@ if main_menu == "الرئيسية":
 
 elif main_menu == "الشركاء":
     st.markdown("<h3 style='color: #714B67;'>👥 إدارة شركاء النجاح (العملاء والموردين)</h3>", unsafe_allow_html=True)
-    t_cust, t_supp, t_add = st.tabs(["📋 العملاء", "📋 الموردين", "➕ إضافة عميل أو مورد جديد"])
+    t_cust, t_supp, t_add, t_excel = st.tabs(["📋 العملاء", "📋 الموردين", "➕ إضافة عميل أو مورد جديد", "📊 الاستيراد عن طريق الاكسيل"])
     
     with t_cust:
         cust_list = [{"كود العميل": v.get("كود العميل"), "اسم العميل": k, "السجل التجاري": v.get("رقم السجل"), "الرقم الضريبي": v.get("الرقم الضريبي"), "الهاتف": v.get("الهاتف"), "العنوان": v.get("العنوان"), "الرصيد": v.get("الرصيد الحالي")} for k, v in st.session_state['customers_db'].items()]
@@ -513,10 +514,41 @@ elif main_menu == "الشركاء":
                 else:
                     st.error("يرجى إدخال الكود والاسم على الأقل.")
 
+    with t_excel:
+        st.markdown("#### استيراد الشركاء (العملاء / الموردين) عبر ملف إكسل Excel")
+        st.info("يجب أن يحتوي ملف الـ Excel على أعمدة تتضمن: النوع (عميل/مورد)، الكود، الاسم، السجل التجاري، الرقم الضريبي، الهاتف، العنوان، والرصيد.")
+        up_partners_file = st.file_uploader("اختر ملف إكسل للشركاء (.xlsx, .csv)", type=["xlsx", "csv"], key="partners_excel_up")
+        if up_partners_file is not None:
+            try:
+                if up_partners_file.name.endswith('.csv'):
+                    df_imp = pd.read_csv(up_partners_file)
+                else:
+                    df_imp = pd.read_excel(up_partners_file)
+                st.write("معاينة البيانات المستوردة:", df_imp.head())
+                if st.button("تأكيد واعتماد استيراد الشركاء 📥"):
+                    for _, row in df_imp.iterrows():
+                        p_t = str(row.get("النوع", "عميل")).strip()
+                        p_c = str(row.get("الكود", f"PRT-{int(datetime.now().timestamp())}"))
+                        p_n = str(row.get("الاسم", "شريك جديد"))
+                        p_r = str(row.get("السجل التجاري", ""))
+                        p_tx = str(row.get("الرقم الضريبي", ""))
+                        p_ph = str(row.get("الهاتف", ""))
+                        p_adr = str(row.get("العنوان", ""))
+                        p_b = float(row.get("الرصيد", 0.0))
+                        
+                        if "مورد" in p_t:
+                            st.session_state['suppliers_db'][p_n] = {"كود المورد": p_c, "رقم السجل": p_r, "الرقم الضريبي": p_tx, "الهاتف": p_ph, "العنوان": p_adr, "الرصيد الحالي": p_b}
+                        else:
+                            st.session_state['customers_db'][p_n] = {"كود العميل": p_c, "رقم السجل": p_r, "الرقم الضريبي": p_tx, "الهاتف": p_ph, "العنوان": p_adr, "الرصيد الحالي": p_b}
+                    st.success("تم استيراد وإضافة الشركاء بنجاح!")
+                    st.rerun()
+            except Exception as e:
+                st.error(fحدث خطأ أثناء قراءة الملف: {e}")
+
 elif main_menu == "الموارد البشرية":
     st.markdown("<h3 style='color: #714B67;'>👨‍💼 إدارة الموارد البشرية (HR)</h3>", unsafe_allow_html=True)
-    hr_tab1, hr_tab2, hr_tab3, hr_tab4, hr_tab5 = st.tabs([
-        "📋 سجل الموظفين الشامل", "➕ إضافة موظف جديد", "⏰ متابعة الحضور والانصراف", "🏖️ إدارة الإجازات والطلبات", "💰 مسير الرواتب والأجور (Payroll)"
+    hr_tab1, hr_tab2, hr_tab3, hr_tab4, hr_tab5, hr_tab6 = st.tabs([
+        "📋 سجل الموظفين الشامل", "➕ إضافة موظف جديد", "⏰ متابعة الحضور والانصراف", "🏖️ إدارة الإجازات والطلبات", "💰 مسير الرواتب والأجور (Payroll)", "📊 استيراد الموظفين من الاكسيل"
     ])
     with hr_tab1:
         emp_rows = [{"رقم الموظف": k, "الاسم": v["الاسم الكامل"], "القسم": v["القسم"], "المسمى": v["المسمى الوظيفي"], "الراتب": v["الراتب الأساسي"]} for k, v in st.session_state['hr_employees_db'].items()]
@@ -540,6 +572,31 @@ elif main_menu == "الموارد البشرية":
     with hr_tab5:
         sal_rows = [{"رقم الموظف": k, "الاسم": v["الاسم الكامل"], "الصافي المستحق": v["الراتب الأساسي"] + v.get("بدل السكن", 0)} for k, v in st.session_state['hr_employees_db'].items()]
         render_arabic_table_with_controls(pd.DataFrame(sal_rows), "مسير_الرواتب")
+    with hr_tab6:
+        st.markdown("#### استيراد بيانات الموظفين عبر ملف إكسل Excel")
+        up_emp_file = st.file_uploader("اختر ملف إكسل للموظفين (.xlsx, .csv)", type=["xlsx", "csv"], key="emp_excel_up")
+        if up_emp_file is not None:
+            try:
+                if up_emp_file.name.endswith('.csv'):
+                    df_emp_imp = pd.read_csv(up_emp_file)
+                else:
+                    df_emp_imp = pd.read_excel(up_emp_file)
+                st.write("معاينة موظفي الإكسل:", df_emp_imp.head())
+                if st.button("تأكيد استيراد الموظفين 📥"):
+                    for _, row in df_emp_imp.iterrows():
+                        eid = str(row.get("رقم الموظف", f"EMP-{int(datetime.now().timestamp())}"))
+                        ename = str(row.get("الاسم الكامل", "موظف جديد"))
+                        edept = str(row.get("القسم", "عام"))
+                        etitle = str(row.get("المسمى الوظيفي", "موظف"))
+                        esal = float(row.get("الراتب الأساسي", 5000.0))
+                        st.session_state['hr_employees_db'][eid] = {
+                            "الاسم الكامل": ename, "القسم": edept, "المسمى الوظيفي": etitle, 
+                            "الراتب الأساسي": esal, "الحالة": "على رأس العمل"
+                        }
+                    st.success("تم استيراد الموظفين بنجاح!")
+                    st.rerun()
+            except Exception as e:
+                st.error(fحدث خطأ: {e})
 
 elif main_menu == "الإنتاج":
     st.markdown("<h3 style='color: #714B67;'>🏭 إدارة الإنتاج والمصنع/المطبخ</h3>", unsafe_allow_html=True)
@@ -804,7 +861,7 @@ elif main_menu == "المشتريات":
 
 elif main_menu == "المخزون":
     st.markdown("<h3 style='color: #714B67;'>📋 نظام المخزون والجرد المستمر</h3>", unsafe_allow_html=True)
-    inv_tab1, inv_tab2 = st.tabs(["📋 أرصدة المخزون الحالية", "➕ إضافة صنف جديد بالمخزن"])
+    inv_tab1, inv_tab2, inv_tab3 = st.tabs(["📋 أرصدة المخزون الحالية", "➕ إضافة صنف جديد بالمخزن", "📊 استيراد الأصناف من الاكسيل"])
     with inv_tab1:
         stock_rows = [{"الصنف": k, "الرمز": v.get("رمز الصنف"), "النوع": v.get("نوع المخزون"), "الكمية المتاحة": v["الكمية"], "سعر البيع": v.get("سعر البيع")} for k, v in st.session_state['inventory_stock'].items()]
         render_arabic_table_with_controls(pd.DataFrame(stock_rows), "أرصدة_المخزون")
@@ -819,6 +876,30 @@ elif main_menu == "المخزون":
                     st.session_state['inventory_stock'][it_name] = {"رمز الصنف": f"ITM-{int(datetime.now().timestamp())}", "الكمية": it_qty, "سعر الشراء": it_cost, "سعر البيع": it_price}
                     st.success("تم إضافة الصنف للمخزن بنجاح!")
                     st.rerun()
+    with inv_tab3:
+        st.markdown("#### استيراد أصناف المخزون عبر ملف إكسل Excel")
+        up_inv_file = st.file_uploader("اختر ملف إكسل للأصناف (.xlsx, .csv)", type=["xlsx", "csv"], key="inv_excel_up")
+        if up_inv_file is not None:
+            try:
+                if up_inv_file.name.endswith('.csv'):
+                    df_inv_imp = pd.read_csv(up_inv_file)
+                else:
+                    df_inv_imp = pd.read_excel(up_inv_file)
+                st.write("معاينة أصناف الإكسل:", df_inv_imp.head())
+                if st.button("تأكيد استيراد الأصناف والمخزون 📥"):
+                    for _, row in df_inv_imp.iterrows():
+                        iname = str(row.get("اسم الصنف", "صنف جديد"))
+                        icode = str(row.get("رمز الصنف", f"ITM-{int(datetime.now().timestamp())}"))
+                        iqty = float(row.get("الكمية", 10.0))
+                        icost = float(row.get("سعر الشراء", 100.0))
+                        iprice = float(row.get("سعر البيع", 150.0))
+                        st.session_state['inventory_stock'][iname] = {
+                            "رمز الصنف": icode, "الكمية": iqty, "سعر الشراء": icost, "سعر البيع": iprice
+                        }
+                    st.success("تم استيراد الأصناف بنجاح!")
+                    st.rerun()
+            except Exception as e:
+                st.error(fحدث خطأ: {e})
 
 elif main_menu == "المحاسبة والشجرة":
     st.markdown("<h3 style='color: #714B67;'>💰 النظام المحاسبي والشجرة والقوائم المالية الاحترافية الشاملة</h3>", unsafe_allow_html=True)
@@ -826,7 +907,7 @@ elif main_menu == "المحاسبة والشجرة":
     acc_tabs = st.tabs([
         "🌳 شجرة الحسابات", "⚖️ ميزان المراجعة", "📈 قائمة الدخل", "💵 التدفقات", 
         "🏛️ الميزانية", "🔄 حقوق الملكية", "🧾 ضريبة القيمة المضافة بالربع", 
-        "📉 الإهلاكات", "📝 القيود", "📖 الأستاذ"
+        "📉 الإهلاكات", "📝 القيود", "📖 الأستاذ", "👥 دفتر الاستاذ العام للشركاء"
     ])
     
     with acc_tabs[0]:
@@ -889,7 +970,6 @@ elif main_menu == "المحاسبة والشجرة":
         ]
         render_arabic_table_with_controls(pd.DataFrame(equity_rows), "التغيير_في_حقوق_الملكية")
 
-    # --- 7. حساب ضريبة القيمة المضافة مقسمة بالأرباع + نموذج الهيئة الجديد أسفل الجدول ---
     with acc_tabs[6]:
         st.markdown("#### إقرار حساب ضريبة القيمة المضافة (مقسماً بالأرباع السنوية)")
         vat_quarters = [
@@ -932,7 +1012,6 @@ elif main_menu == "المحاسبة والشجرة":
         ]
         render_arabic_table_with_controls(pd.DataFrame(vat_quarters), "حساب_ضريبة_القيمة_المضافة_بالأرباع")
 
-        # --- نموذج الهيئة المضاف أسفل الجدول مباشرة (إضافة وتعديل فقط بدون حذف) ---
         st.markdown("---")
         st.markdown("#### 🏛️ نموذج الإقرار الضريبي الرسمي لهيئة الزكاة والضريبة والجمارك (ZATCA)")
         
@@ -1006,6 +1085,44 @@ elif main_menu == "المحاسبة والشجرة":
     with acc_tabs[9]:
         st.markdown("#### دفتر الأستاذ العام الشامل")
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "دفتر_الأستاذ")
+
+    # --- الحساب الجديد المطللوب: دفتر الاستاذ العام للشركاء ---
+    with acc_tabs[10]:
+        st.markdown("#### 👥 دفتر الاستاذ العام للشركاء (كشف حساب العميل / المورد بنفس الأكواد)")
+        st.info("هذا الحساب يعرض تفاصيل وأرصدة وكشوفات حسابات العملاء والموردين بدقة مع الاحتفاظ بكافة البيانات والرموز.")
+        
+        partner_select_type = st.radio("اختر نوع الشريك للعرض:", ["العملاء", "الموردين"], horizontal=True)
+        
+        if partner_select_type == "العملاء":
+            cust_names = list(st.session_state['customers_db'].keys())
+            selected_partner = st.selectbox("اختر العميل المطلوب كشف حسابه:", cust_names if cust_names else ["لا يوجد عملاء"])
+            if selected_partner and selected_partner != "لا يوجد عملاء":
+                p_data = st.session_state['customers_db'][selected_partner]
+                partner_rows = [{
+                    "كود العميل": p_data.get("كود العميل"),
+                    "اسم الشريك": selected_partner,
+                    "السجل التجاري": p_data.get("رقم السجل"),
+                    "الرقم الضريبي": p_data.get("الرقم الضريبي"),
+                    "الهاتف": p_data.get("الهاتف"),
+                    "العنوان": p_data.get("العنوان"),
+                    "الرصيد الجاري (ر.س)": p_data.get("الرصيد الحالي")
+                }]
+                render_arabic_table_with_controls(pd.DataFrame(partner_rows), "كشف_حساب_العميل_استاذ_الشركاء")
+        else:
+            supp_names = list(st.session_state['suppliers_db'].keys())
+            selected_partner = st.selectbox("اختر المورد المطلوب كشف حسابه:", supp_names if supp_names else ["لا يوجد موردين"])
+            if selected_partner and selected_partner != "لا يوجد موردين":
+                p_data = st.session_state['suppliers_db'][selected_partner]
+                partner_rows = [{
+                    "كود المورد": p_data.get("كود المورد"),
+                    "اسم الشريك": selected_partner,
+                    "السجل التجاري": p_data.get("رقم السجل"),
+                    "الرقم الضريبي": p_data.get("الرقم الضريبي"),
+                    "الهاتف": p_data.get("الهاتف"),
+                    "العنوان": p_data.get("العنوان"),
+                    "الرصيد الجاري (ر.س)": p_data.get("الرصيد الحالي")
+                }]
+                render_arabic_table_with_controls(pd.DataFrame(partner_rows), "كشف_حساب_المورد_استاذ_الشركاء")
 
 elif main_menu == "الإعدادات":
     st.markdown("<h3 style='color: #714B67;'>⚙️ إعدادات الترخيص، تخصيص الموديولات، وربط Supabase</h3>", unsafe_allow_html=True)
