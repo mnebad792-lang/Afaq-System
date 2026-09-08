@@ -288,7 +288,7 @@ if 'general_ledger' not in st.session_state:
         {"رقم القيد": "JE-101", "البيان": "قيد الافتتاح", "المدين": 3000000.0, "الدائن": 3000000.0}
     ]
 
-# --- تنسيقات CSS مع خاصية Shrink to Fit للجداول ---
+# --- تنسيقات CSS مع خاصية Shrink to Fit للجداول وتصميم الأيقونات الجانبية ---
 st.markdown("""
     <style>
     .stApp, body, p, span, div, label, input, select {
@@ -357,7 +357,11 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
     html_code += "</tbody></table></div>"
     st.markdown(html_code, unsafe_allow_html=True)
 
-# --- القائمة الجانبية الرئيسية (مختصرة ونظيفة) ---
+# --- تهيئة المجلد الحالي في الجلسة ---
+if 'active_module' not in st.session_state:
+    st.session_state['active_module'] = "الرئيسية"
+
+# --- القائمة الجانبية (أيقونات احترافية وبدون تكرار وحذف الزيادات) ---
 with st.sidebar:
     client_conf = st.session_state['client_license_config']
     st.markdown(f"<h2 style='color: #714B67; text-align: center;'>نظام أفق ERP</h2>", unsafe_allow_html=True)
@@ -368,42 +372,51 @@ with st.sidebar:
     else:
         st.info("ℹ️ يعمل الآن بنجاح عبر النظام المحلي")
 
-    if st.button("🔒 تسجيل الخروج"):
+    if st.button("🔒 تسجيل الخروج", use_container_width=True):
         st.session_state['authenticated'] = False
         st.rerun()
 
     st.markdown("---")
     
-    menu_options = [
-        "الرئيسية واللوحة العامة", 
-        "إدارة شركاء النجاح (العملاء والموردين)"
-    ]
+    # خريطة الموديولات المتاحة مع الأيقونات والأسماء المختصرة جداً
+    modules_map = {
+        "الرئيسية": "🏠 الرئيسية",
+        "الشركاء": "👥 الشركاء",
+    }
     
     if client_conf.get("enable_hr", True):
-        menu_options.append("إدارة الموارد البشرية (HR)")
+        modules_map["الموارد البشرية"] = "👨‍💼 الموارد البشرية"
     if client_conf.get("enable_production", True):
-        menu_options.append("إدارة الإنتاج والمصنع/المطبخ")
+        modules_map["الإنتاج"] = "🏭 الإنتاج"
     if client_conf.get("enable_projects", True):
-        menu_options.append("إدارة المشاريع")
+        modules_map["المشروعات"] = "📊 المشروعات"
     if client_conf.get("enable_cost_centers", True):
-        menu_options.append("إدارة مراكز التكلفة")
+        modules_map["مراكز التكلفة"] = "🏷️ مراكز التكلفة"
         
-    menu_options.extend([
-        "إدارة الصلاحيات والمستخدمين",
-        "إدارة المبيعات المتكاملة", 
-        "إدارة المشتريات المتكاملة", 
-        "نظام المخزون (الجرد المستمر)",
-        "النظام المحاسبي والشجرة",
-        "⚙️ إعدادات ترخيص العميل والنسخ الاحتياطي"
-    ])
+    modules_map.update({
+        "الصلاحيات": "🔐 الصلاحيات",
+        "المبيعات": "🛒 المبيعات",
+        "المشتريات": "📦 المشتريات",
+        "المخزون": "📋 المخزون",
+        "المحاسبة والشجرة": "💰 المحاسبة",
+        "الإعدادات": "⚙️ الإعدادات"
+    })
     
-    main_menu = st.selectbox("اختر النظام الرئيسي:", menu_options)
+    # عرض الأيقونات كأزرار تفاعلية احترافية في الشريط الجانبي
+    for mod_key, mod_label in modules_map.items():
+        is_selected = (st.session_state['active_module'] == mod_key)
+        button_type = "primary" if is_selected else "secondary"
+        if st.button(mod_label, key=f"btn_mod_{mod_key}", use_container_width=True, type=button_type):
+            st.session_state['active_module'] = mod_key
+            st.rerun()
 
     st.markdown("---")
     st.markdown("<p style='font-size: 10px; color: #714B67; text-align: center;'>جميع الحقوق محفوظة © أفق 2026</p>", unsafe_allow_html=True)
 
-# --- محتوى اللوحة العامة ---
-if main_menu == "الرئيسية واللوحة العامة":
+main_menu = st.session_state['active_module']
+
+# --- محتوى اللوحة العامة (الرئيسية) ---
+if main_menu == "الرئيسية":
     client_conf = st.session_state['client_license_config']
     st.markdown(f"""
         <div class="official-form-box">
@@ -427,8 +440,8 @@ if main_menu == "الرئيسية واللوحة العامة":
     with col4:
         st.markdown(f"<div class='metric-card'><p style='color: #64748b; margin:0; font-size:12px;'>أوامر الإنتاج المسجلة</p><h3 style='color: #714B67; margin:5px 0 0 0;'>{total_prod_orders} أمر</h3></div>", unsafe_allow_html=True)
 
-# --- إدارة شركاء النجاح ---
-elif main_menu == "إدارة شركاء النجاح (العملاء والموردين)":
+# --- إدارة شركاء النجاح (الشركاء) ---
+elif main_menu == "الشركاء":
     st.markdown("<h3 style='color: #714B67;'>👥 إدارة شركاء النجاح (العملاء والموردين)</h3>", unsafe_allow_html=True)
     t_cust, t_supp, t_add = st.tabs(["📋 العملاء", "📋 الموردين", "➕ إضافة عميل أو مورد جديد"])
     
@@ -462,9 +475,9 @@ elif main_menu == "إدارة شركاء النجاح (العملاء والمو
                 else:
                     st.error("يرجى إدخال الكود والاسم على الأقل.")
 
-# --- إدارة الموارد البشرية (تم تحويل القوائم إلى Tabs أفقية) ---
-elif main_menu == "إدارة الموارد البشرية (HR)":
-    st.markdown("<h3 style='color: #714B67;'>👥 إدارة الموارد البشرية (HR)</h3>", unsafe_allow_html=True)
+# --- إدارة الموارد البشرية ---
+elif main_menu == "الموارد البشرية":
+    st.markdown("<h3 style='color: #714B67;'>👨‍💼 إدارة الموارد البشرية (HR)</h3>", unsafe_allow_html=True)
     
     hr_tab1, hr_tab2, hr_tab3, hr_tab4, hr_tab5 = st.tabs([
         "📋 سجل الموظفين الشامل", 
@@ -501,8 +514,8 @@ elif main_menu == "إدارة الموارد البشرية (HR)":
         sal_rows = [{"رقم الموظف": k, "الاسم": v["الاسم الكامل"], "الصافي المستحق": v["الراتب الأساسي"] + v.get("بدل السكن", 0)} for k, v in st.session_state['hr_employees_db'].items()]
         render_arabic_table_with_controls(pd.DataFrame(sal_rows), "مسير_الرواتب")
 
-# --- إدارة الإنتاج (تم تحويل القوائم إلى Tabs أفقية) ---
-elif main_menu == "إدارة الإنتاج والمصنع/المطبخ":
+# --- إدارة الإنتاج ---
+elif main_menu == "الإنتاج":
     st.markdown("<h3 style='color: #714B67;'>🏭 إدارة الإنتاج والمصنع/المطبخ</h3>", unsafe_allow_html=True)
     
     prod_tab1, prod_tab2, prod_tab3 = st.tabs([
@@ -527,8 +540,8 @@ elif main_menu == "إدارة الإنتاج والمصنع/المطبخ":
     with prod_tab3:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['production_orders']), "أوامر_مكتملة")
 
-# --- إدارة المشاريع (تم تحويل القوائم إلى Tabs أفقية) ---
-elif main_menu == "إدارة المشاريع":
+# --- إدارة المشروعات ---
+elif main_menu == "المشروعات":
     st.markdown("<h3 style='color: #714B67;'>📊 إدارة المشاريع</h3>", unsafe_allow_html=True)
     
     proj_tab1, proj_tab2 = st.tabs([
@@ -549,8 +562,8 @@ elif main_menu == "إدارة المشاريع":
                 st.success("تم إضافة المشروع بنجاح!")
                 st.rerun()
 
-# --- مراكز التكلفة (تم تحويل القوائم إلى Tabs أفقية) ---
-elif main_menu == "إدارة مراكز التكلفة":
+# --- مراكز التكلفة ---
+elif main_menu == "مراكز التكلفة":
     st.markdown("<h3 style='color: #714B67;'>🏷️ إدارة مراكز التكلفة</h3>", unsafe_allow_html=True)
     
     cc_tab1, cc_tab2 = st.tabs([
@@ -570,8 +583,8 @@ elif main_menu == "إدارة مراكز التكلفة":
                 st.success("تم الحفظ بنجاح!")
                 st.rerun()
 
-# --- إدارة الصلاحيات والمستخدمين (تم تحويل القوائم إلى Tabs أفقية) ---
-elif main_menu == "إدارة الصلاحيات والمستخدمين":
+# --- الصلاحيات ---
+elif main_menu == "الصلاحيات":
     st.markdown("<h3 style='color: #714B67;'>🔐 إدارة الصلاحيات والمستخدمين</h3>", unsafe_allow_html=True)
     
     usr_tab1, usr_tab2 = st.tabs([
@@ -592,8 +605,8 @@ elif main_menu == "إدارة الصلاحيات والمستخدمين":
                 st.success("تمت الإضافة بنجاح!")
                 st.rerun()
 
-# --- إدارة المبيعات المتكاملة ---
-elif main_menu == "إدارة المبيعات المتكاملة":
+# --- المبيعات ---
+elif main_menu == "المبيعات":
     st.markdown("<h3 style='color: #714B67;'>🛒 إدارة المبيعات الشاملة والدورة المحاسبية</h3>", unsafe_allow_html=True)
     m_tab1, m_tab2, m_tab3, m_tab4 = st.tabs(["1️⃣ عروض الأسعار", "2️⃣ أوامر البيع", "3️⃣ فواتير المبيعات المعتمدة", "➕ إنشاء عرض سعر جديد"])
     
@@ -636,8 +649,8 @@ elif main_menu == "إدارة المبيعات المتكاملة":
                 st.success("تم حفظ عرض السعر بنجاح!")
                 st.rerun()
 
-# --- إدارة المشتريات المتكاملة ---
-elif main_menu == "إدارة المشتريات المتكاملة":
+# --- المشتريات ---
+elif main_menu == "المشتريات":
     st.markdown("<h3 style='color: #714B67;'>📦 إدارة المشتريات وفواتير الموردين</h3>", unsafe_allow_html=True)
     p_t1, p_t2 = st.tabs(["📋 فواتير المشتريات المسجلة", "➕ تسجيل فاتورة مشتريات جديدة"])
     with p_t1:
@@ -653,9 +666,9 @@ elif main_menu == "إدارة المشتريات المتكاملة":
                 st.success("تم تسجيل المشتريات وترحيل القيد بنجاح!")
                 st.rerun()
 
-# --- نظام المخزون (تم تحويل القوائم إلى Tabs أفقية) ---
-elif main_menu == "نظام المخزون (الجرد المستمر)":
-    st.markdown("<h3 style='color: #714B67;'>📦 نظام المخزون والجرد المستمر</h3>", unsafe_allow_html=True)
+# --- المخزون ---
+elif main_menu == "المخزون":
+    st.markdown("<h3 style='color: #714B67;'>📋 نظام المخزون والجرد المستمر</h3>", unsafe_allow_html=True)
     
     inv_tab1, inv_tab2 = st.tabs([
         "📋 أرصدة المخزون الحالية", 
@@ -677,9 +690,9 @@ elif main_menu == "نظام المخزون (الجرد المستمر)":
                     st.success("تم إضافة الصنف للمخزن بنجاح!")
                     st.rerun()
 
-# --- النظام المحاسبي والشجرة (تم تحويل القوائم إلى Tabs أفقية) ---
-elif main_menu == "النظام المحاسبي والشجرة":
-    st.markdown("<h3 style='color: #714B67;'>📊 النظام المحاسبي والشجرة والقيود</h3>", unsafe_allow_html=True)
+# --- المحاسبة والشجرة ---
+elif main_menu == "المحاسبة والشجرة":
+    st.markdown("<h3 style='color: #714B67;'>💰 النظام المحاسبي والشجرة والقيود</h3>", unsafe_allow_html=True)
     
     acc_tab1, acc_tab2, acc_tab3 = st.tabs([
         "🌳 شجرة الحسابات الكاملة", 
@@ -701,8 +714,8 @@ elif main_menu == "النظام المحاسبي والشجرة":
     with acc_tab3:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "دفتر_الأستاذ")
 
-# --- إعدادات ترخيص العميل والنسخ الاحتياطي ---
-elif main_menu == "⚙️ إعدادات ترخيص العميل والنسخ الاحتياطي":
+# --- الإعدادات ---
+elif main_menu == "الإعدادات":
     st.markdown("<h3 style='color: #714B67;'>⚙️ إعدادات الترخيص، تخصيص الموديولات، وربط Supabase</h3>", unsafe_allow_html=True)
     
     tab_client, tab_db, tab_backup = st.tabs(["📝 بيانات المشتري وتخصيص الموديولات", "☁️ إعدادات قاعدة بيانات Supabase", "💾 النسخ الاحتياطي واستعادة البيانات"])
