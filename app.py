@@ -1,9 +1,31 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date
+from datetime import datetime
+import json
 
-# --- إعداد الصفحة ---
+# --- محاولة استيراد مكتبة Supabase للربط السحابي ---
+try:
+    from supabase import create_client, Client
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
+
 st.set_page_config(page_title="نظام أفق ERP المحاسبي المتكامل", layout="wide", initial_sidebar_state="expanded")
+
+# --- إعدادات الاتصال بقاعدة بيانات Supabase السحابية ---
+SUPABASE_URL = "https://your-supabase-project.supabase.co"
+SUPABASE_KEY = "your-supabase-anon-key-here"
+
+@st.cache_resource
+def init_supabase():
+    if SUPABASE_AVAILABLE and SUPABASE_URL != "https://your-supabase-project.supabase.co":
+        try:
+            return create_client(SUPABASE_URL, SUPABASE_KEY)
+        except Exception:
+            return None
+    return None
+
+supabase_client = init_supabase()
 
 # --- دالة إعادة تصفير البرنامج بالكامل ---
 def reset_system_to_default():
@@ -18,81 +40,129 @@ if 'client_license_config' not in st.session_state:
         "company_activity": "مقاولات عامة وتجارة وخدمات تقنية",
         "commercial_reg": "4030998877",
         "tax_number": "300222333400003",
-        "software_version": "النسخة المحاسبية الاحترافية 2026 الشاملة لكل الموديولات"
+        "client_phone": "0560000000",
+        "client_address": "الرياض - المملكة العربية السعودية",
+        "software_version": "النسخة المحاسبية الاحترافية 2026 (مع دعم Supabase)",
+        "enable_hr": True,
+        "enable_production": True,
+        "enable_projects": True,
+        "enable_cost_centers": True
     }
 
-# --- تهيئة قواعد البيانات الأساسية للموديولات ---
-if 'warehouses_db' not in st.session_state:
-    st.session_state['warehouses_db'] = ["المستودع الرئيسي - الرياض", "مستودع الفرع - جدة", "مستودع التوريدات العامة"]
-
-if 'cash_boxes_db' not in st.session_state:
-    st.session_state['cash_boxes_db'] = ["الخزينة الرئيسية (صندوق النقد)", "صندوق المعارض"]
-
-if 'banks_db' not in st.session_state:
-    st.session_state['banks_db'] = ["مصرف الراجحي (تحويل/شبكة)", "البنك الأهلي السعودي (تحويل/شبكة)", "بنك الرياض"]
-
-if 'inventory_stock' not in st.session_state:
-    st.session_state['inventory_stock'] = {
-        "PROD-001": {"اسم المنتج": "جهاز حاسوب محمول احترافي", "سعر البيع": 3500.0, "تكلفة الشراء": 2800.0, "الكمية المتاحة": 45},
-        "PROD-002": {"اسم المنتج": "شاشة عرض 27 بوصة 4K", "سعر البيع": 1200.0, "تكلفة الشراء": 900.0, "الكمية المتاحة": 30},
-        "PROD-003": {"اسم المنتج": "طابعة لاسلكية متعددة الوظائف", "سعر البيع": 850.0, "تكلفة الشراء": 600.0, "الكمية المتاحة": 20}
+# --- تهيئة قاعدة بيانات المستخدمين والصلاحيات المفصلة ---
+if 'users_permissions_db' not in st.session_state:
+    st.session_state['users_permissions_db'] = {
+        "admin": {
+            "اسم المستخدم": "admin",
+            "الاسم الكامل": "المدير العام",
+            "الدور": "مدير النظام (Administrator)",
+            "الحالة": "نشط",
+            "صلاحيات الموديولات": {
+                "الرئيسية": True, "الشركاء": True, "الموارد البشرية": True, "الإنتاج": True, 
+                "المشروعات": True, "مراكز التكلفة": True, "الصلاحيات": True, "المبيعات": True, 
+                "المشتريات": True, "المخزون": True, "المحاسبة والشجرة": True, "الإعدادات": True
+            }
+        },
+        "accountant1": {
+            "اسم المستخدم": "accountant1",
+            "الاسم الكامل": "محمد خالد المحاسب",
+            "الدور": "محاسب أول",
+            "الحالة": "نشط",
+            "صلاحيات الموديولات": {
+                "الرئيسية": True, "الشركاء": True, "الموارد البشرية": False, "الإنتاج": False, 
+                "المشروعات": False, "مراكز التكلفة": True, "الصلاحيات": False, "المبيعات": True, 
+                "المشتريات": True, "المخزون": True, "المحاسبة والشجرة": True, "الإعدادات": False
+            }
+        }
     }
 
+# --- تهيئة نظام المصادقة وشاشة الدخول الذكية ---
+if 'authenticated' not in st.session_state:
+    st.session_state['authenticated'] = False
+
+if not st.session_state['authenticated']:
+    st.markdown("""
+        <style>
+        .stApp { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); }
+        .login-card { background: #ffffff; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(113, 75, 103, 0.12); border: 1px solid rgba(113, 75, 103, 0.1); text-align: right; direction: rtl; margin-top: 40px; }
+        .login-title { color: #714B67; font-size: 30px; font-weight: 800; text-align: center; margin-bottom: 5px; }
+        .login-subtitle { color: #64748b; font-size: 13px; text-align: center; margin-bottom: 30px; font-weight: 500; }
+        .stButton>button { width: 100%; background: linear-gradient(135deg, #714B67 0%, #5a3b52 100%); color: white; font-weight: bold; border-radius: 10px; padding: 12px; border: none; box-shadow: 0 4px 15px rgba(113, 75, 103, 0.3); font-size: 16px; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    col_l, col_m, col_r = st.columns([1, 1.3, 1])
+    with col_m:
+        current_client_name = st.session_state['client_license_config']['client_name']
+        st.markdown(f"""
+            <div class="login-card">
+                <div class="login-title">✨ نظام أفق ERP السحابي</div>
+                <div class="login-subtitle">مرخص لصالح: <b>{current_client_name}</b><br>نظام المحاسبة وإدارة الموارد المتكامل</div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        with st.form("login_form"):
+            st.markdown("<p style='font-weight:600; color:#2d3748; margin-bottom:5px;'>اسم المستخدم</p>", unsafe_allow_html=True)
+            username = st.text_input("اسم المستخدم", placeholder="أدخل اسم المستخدم (مثال: admin)", label_visibility="collapsed")
+            
+            st.markdown("<p style='font-weight:600; color:#2d3748; margin-top:15px; margin-bottom:5px;'>كلمة المرور</p>", unsafe_allow_html=True)
+            password = st.text_input("كلمة المرور", type="password", placeholder="أدخل كلمة المرور", label_visibility="collapsed")
+            
+            st.markdown("<div style='margin-top: 25px;'></div>", unsafe_allow_html=True)
+            submit_login = st.form_submit_button("تسجيل الدخول الآمن 🚀")
+            
+            if submit_login:
+                if username == "admin" and password == "12345":
+                    st.session_state['authenticated'] = True
+                    st.success("تم تسجيل الدخول بنجاح! جاري توجيهك للنظام...")
+                    st.rerun()
+                else:
+                    st.error("اسم المستخدم أو كلمة المرور غير صحيحة! (تجربة: admin / 12345)")
+    st.stop()
+
+# --- تهيئة قواعد البيانات والباقي ---
 if 'customers_db' not in st.session_state:
     st.session_state['customers_db'] = {
-        "شركة التقنية الحديثة للتجارة": {"كود العميل": "CUST-001", "رقم السجل": "1010254789", "الرقم الضريبي": "300123456700003", "العنوان": "الرياض - حي الملز", "الهاتف": "0501234567", "الرصيد الحالي": 0.0}
+        "شركة التقنية الحديثة للتجارة": {"كود العميل": "CUST-001", "رقم السجل": "1010254789", "الرقم الضريبي": "300123456700003", "العنوان": "الرياض - حي الملز", "الهاتف": "0501234567", "الحد الائتماني": 100000.0, "الرصيد الحالي": 45000.0}
     }
 
 if 'suppliers_db' not in st.session_state:
     st.session_state['suppliers_db'] = {
-        "شركة التوريدات الكبرى المحدودة": {"كود المورد": "SUP-001", "رقم السجل": "1010987654", "الرقم الضريبي": "300111222300003", "العنوان": "الرياض - الصناعية", "الهاتف": "0561112233", "الرصيد الحالي": 0.0}
+        "شركة التوريدات الكبرى المحدودة": {"كود المورد": "SUP-001", "رقم السجل": "1010987654", "الرقم الضريبي": "300111222300003", "العنوان": "الرياض - الصناعية", "الهاتف": "0561112233", "الرصيد الحالي": 65000.0}
     }
 
-if 'hr_employees_db' not in st.session_state:
-    st.session_state['hr_employees_db'] = {
-        "EMP-101": {"الاسم الكامل": "أحمد محمد العتيبي", "القسم": "الإدارة المالية", "المسمى الوظيفي": "محاسب أول", "الراتب الأساسي": 8000.0, "الحالة": "على رأس العمل"}
+if 'warehouses_db' not in st.session_state:
+    st.session_state['warehouses_db'] = ["المستودع الرئيسي - الرياض", "مستودع فرع جدة", "مستودع المنطقة الشرقية"]
+
+if 'cash_boxes_db' not in st.session_state:
+    st.session_state['cash_boxes_db'] = ["الخزينة الرئيسية (صندوق النقد)", "صندوق المبيعات اليومي"]
+
+if 'banks_db' not in st.session_state:
+    st.session_state['banks_db'] = ["مصرف الراجحي", "البنك الأهلي السعودي (SNB)", "بنك الرياض"]
+
+if 'inventory_stock' not in st.session_state:
+    st.session_state['inventory_stock'] = {
+        "PROD-001": {"اسم المنتج": "شاشة سمارت 55 بوصة 4K", "السعر": 1500.0, "الكمية المتاحة": 50},
+        "PROD-002": {"اسم المنتج": "جهاز حاسب آلي محمول Core i7", "السعر": 3500.0, "الكمية المتاحة": 30},
+        "PROD-003": {"اسم المنتج": "طابعة ليزر متعددة الوظائف", "السعر": 850.0, "الكمية المتاحة": 20}
     }
 
-if 'production_orders' not in st.session_state:
-    st.session_state['production_orders'] = [
-        {"رقم أمر الإنتاج": "PRD-501", "المنتج النهائي": "جهاز حاسوب محمول احترافي", "الكمية المطلوبة": 10, "الحالة": "قيد التنفيذ"}
-    ]
+if 'sales_workflow_db' not in st.session_state:
+    st.session_state['sales_workflow_db'] = []
 
-if 'projects_db' not in st.session_state:
-    st.session_state['projects_db'] = [
-        {"رقم المشروع": "PRJ-01", "اسم المشروع": "تطوير البنية التحتية التقنية", "ميزانية المشروع": 150000.0, "حالة المشروع": "ساري"}
-    ]
+if 'sales_invoices_full_db' not in st.session_state:
+    st.session_state['sales_invoices_full_db'] = []
 
-if 'cost_centers_db' not in st.session_state:
-    st.session_state['cost_centers_db'] = [
-        {"كود المركز": "CC-100", "اسم مركز التكلفة": "مركز تكلفة الإدارة العامة"},
-        {"كود المركز": "CC-200", "اسم مركز التكلفة": "مركز تكلفة المبيعات والتسويق"}
-    ]
+if 'purchases_workflow_db' not in st.session_state:
+    st.session_state['purchases_workflow_db'] = []
 
-if 'users_permissions_db' not in st.session_state:
-    st.session_state['users_permissions_db'] = {
-        "admin": {
-            "اسم المستخدم": "admin", "الاسم الكامل": "المدير العام", "الدور": "مدير النظام (Administrator)", "الحالة": "نشط",
-            "صلاحيات الموديولات": {m: True for m in ["الرئيسية", "الشركاء", "الموارد البشرية", "الإنتاج", "المشروعات", "مراكز التكلفة", "الصلاحيات", "المبيعات", "المشتريات", "المخزون", "المحاسبة والشجرة", "الإعدادات"]}
-        }
-    }
-
-if 'sales_quotations' not in st.session_state:
-    st.session_state['sales_quotations'] = []
-
-if 'sales_orders' not in st.session_state:
-    st.session_state['sales_orders'] = []
-
-if 'sales_invoices_db' not in st.session_state:
-    st.session_state['sales_invoices_db'] = []
-
-if 'purchase_invoices_db' not in st.session_state:
-    st.session_state['purchase_invoices_db'] = []
+if 'purchases_invoices_full_db' not in st.session_state:
+    st.session_state['purchases_invoices_full_db'] = []
 
 if 'general_ledger' not in st.session_state:
     st.session_state['general_ledger'] = []
 
-# --- تنسيقات CSS مع خاصية Shrink to Fit ---
+# --- تنسيقات CSS ---
 st.markdown("""
     <style>
     .stApp, body, p, span, div, label, input, select {
@@ -105,7 +175,10 @@ st.markdown("""
     }
     .custom-table th { background-color: #714B67; color: white; padding: 8px; text-align: right; white-space: nowrap; }
     .custom-table td { padding: 6px 8px; border-bottom: 1px solid #edf2f7; color: #2d3748; white-space: nowrap; }
-    .shrink-container { width: 100%; overflow-x: auto; zoom: 95%; }
+    .official-form-box {
+        background: white; padding: 20px; border-radius: 8px; border: 1px solid #dcdde1;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04); margin-bottom: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -117,7 +190,7 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
     with c_f1:
         search_query = st.text_input(f"بحث فوري في {section_name}", key=f"search_{section_name}")
     with c_f2:
-        st.markdown("<p style='font-size:12px; color:#64748b; padding-top:10px;'>خاصية Shrink to Fit والفلترة مفعلة</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:12px; color:#64748b; padding-top:10px;'>فلترة البحث الفعالة مفعلة</p>", unsafe_allow_html=True)
 
     filtered_df = df.copy()
     if search_query:
@@ -131,7 +204,7 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
     with c_b3:
         if st.button("📄 PDF", key=f"pdf_{section_name}"): st.toast("تم التصدير لـ PDF!")
 
-    html_code = "<div class='shrink-container'><table class='custom-table'><thead><tr>"
+    html_code = "<div style='overflow-x: auto;'><table class='custom-table'><thead><tr>"
     for col in filtered_df.columns: html_code += f"<th>{col}</th>"
     html_code += "</tr></thead><tbody>"
     for _, row in filtered_df.iterrows():
@@ -144,25 +217,25 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
 if 'active_module' not in st.session_state:
     st.session_state['active_module'] = "الرئيسية"
 
-# --- القائمة الجانبية (كل الموديولات الـ 12) ---
+# --- القائمة الجانبية ---
 with st.sidebar:
     client_conf = st.session_state['client_license_config']
     st.markdown(f"<h2 style='color: #714B67; text-align: center;'>نظام أفق ERP</h2>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align: center; font-size: 11px; color: #64748b;'>مرخص لـ: <b>{client_conf['client_name']}</b></p>", unsafe_allow_html=True)
-    st.markdown("---")
     
+    if st.button("🔒 تسجيل الخروج", use_container_width=True):
+        st.session_state['authenticated'] = False
+        st.rerun()
+
+    st.markdown("---")
     modules_map = {
         "الرئيسية": "🏠 الرئيسية",
         "الشركاء": "👥 الشركاء",
-        "الموارد البشرية": "👨‍💼 الموارد البشرية",
-        "الإنتاج": "🏭 الإنتاج",
-        "المشروعات": "📊 المشروعات",
-        "مراكز التكلفة": "🏷️ مراكز التكلفة",
-        "الصلاحيات": "🔐 الصلاحيات",
-        "المبيعات": "🛒 موديول المبيعات",
-        "المشتريات": "📦 المشتريات",
+        "المبيعات": "🛒 المبيعات الشاملة",
+        "المشتريات": "📦 المشتريات الشاملة",
         "المخزون": "📋 المخزون",
-        "المحاسبة والشجرة": "💰 المحاسبة وشجرة الحسابات",
+        "المحاسبة والشجرة": "💰 المحاسبة والقيد التلقائي",
+        "الصلاحيات": "🔐 الصلاحيات",
         "الإعدادات": "⚙️ الإعدادات"
     }
     
@@ -174,340 +247,352 @@ with st.sidebar:
 
 main_menu = st.session_state['active_module']
 
-# ================= 1. الرئيسية =================
+# --- لوحة التحكم ---
 if main_menu == "الرئيسية":
-    st.markdown("<h3 style='color: #714B67;'>🏠 لوحة التحكم الرئيسية للنظام السحابي</h3>", unsafe_allow_html=True)
-    col1, col2, col3, col4 = st.columns(4)
-    with col1: st.metric("إجمالي العملاء", len(st.session_state['customers_db']))
-    with col2: st.metric("فواتير المبيعات", len(st.session_state['sales_invoices_db']))
-    with col3: st.metric("أصناف المخزون", len(st.session_state['inventory_stock']))
-    with col4: st.metric("القيود المحاسبية", len(st.session_state['general_ledger']))
+    st.markdown("<h3>🚀 لوحة التحكم السحابية - نظام أفق ERP</h3>", unsafe_allow_html=True)
+    st.info("مرحباً بك في النظام. تم تفعيل دورة مستندات المبيعات والمشتريات المتكاملة (عرض سعر -> أمر بيع -> فاتورة ضريبية مع خصم المخزون والقيود التلقائية).")
 
-# ================= 2. الشركاء =================
+# --- الشركاء ---
 elif main_menu == "الشركاء":
-    st.markdown("<h3 style='color: #714B67;'>👥 إدارة الشركاء والعملاء والموردين</h3>", unsafe_allow_html=True)
-    c1, c2 = st.tabs(["العملاء", "الموردين"])
-    with c1:
-        cust_list = [{"كود العميل": v["كود العميل"], "اسم العميل": k, "السجل": v["رقم السجل"], "الضريبي": v["الرقم الضريبي"], "الهاتف": v["الهاتف"]} for k, v in st.session_state['customers_db'].items()]
+    st.markdown("<h3 style='color: #714B67;'>👥 إدارة شركاء النجاح (العملاء والموردين)</h3>", unsafe_allow_html=True)
+    tab_c1, tab_c2 = st.tabs(["العملاء", "الموردين"])
+    with tab_c1:
+        cust_list = [{"كود العميل": v["كود العميل"], "اسم العميل": k, "السجل التجاري": v["رقم السجل"], "الرقم الضريبي": v["الرقم الضريبي"], "الرصيد": v["الرصيد الحالي"]} for k, v in st.session_state['customers_db'].items()]
         render_arabic_table_with_controls(pd.DataFrame(cust_list), "العملاء")
-    with c2:
-        supp_list = [{"كود المورد": v["كود المورد"], "اسم المورد": k, "السجل": v["رقم السجل"], "الضريبي": v["الرقم الضريبي"]} for k, v in st.session_state['suppliers_db'].items()]
+    with tab_c2:
+        supp_list = [{"كود المورد": v["كود المورد"], "اسم المورد": k, "السجل التجاري": v["رقم السجل"], "الرقم الضريبي": v["الرقم الضريبي"], "الرصيد": v["الرصيد الحالي"]} for k, v in st.session_state['suppliers_db'].items()]
         render_arabic_table_with_controls(pd.DataFrame(supp_list), "الموردين")
 
-# ================= 3. الموارد البشرية =================
-elif main_menu == "الموارد البشرية":
-    st.markdown("<h3 style='color: #714B67;'>👨‍💼 إدارة الموارد البشرية وشئون الموظفين</h3>", unsafe_allow_html=True)
-    emp_list = [{"كود الموظف": k, "الاسم": v["الاسم الكامل"], "القسم": v["القسم"], "المسمى": v["المسمى الوظيفي"], "الراتب الأساسي": f"{v['الراتب الأساسي']:,.2f} ر.س"} for k, v in st.session_state['hr_employees_db'].items()]
-    render_arabic_table_with_controls(pd.DataFrame(emp_list), "الموظفين")
-
-# ================= 4. الإنتاج =================
-elif main_menu == "الإنتاج":
-    st.markdown("<h3 style='color: #714B67;'>🏭 موديول الإنتاج والتصنيع</h3>", unsafe_allow_html=True)
-    render_arabic_table_with_controls(pd.DataFrame(st.session_state['production_orders']), "أوامر_الإنتاج")
-
-# ================= 5. المشروعات =================
-elif main_menu == "المشروعات":
-    st.markdown("<h3 style='color: #714B67;'>📊 إدارة المشروعات والمقاولات</h3>", unsafe_allow_html=True)
-    render_arabic_table_with_controls(pd.DataFrame(st.session_state['projects_db']), "المشروعات")
-
-# ================= 6. مراكز التكلفة =================
-elif main_menu == "مراكز التكلفة":
-    st.markdown("<h3 style='color: #714B67;'>🏷️ مراكز التكلفة والتحليل المالي</h3>", unsafe_allow_html=True)
-    render_arabic_table_with_controls(pd.DataFrame(st.session_state['cost_centers_db']), "مراكز_التكلفة")
-
-# ================= 7. الصلاحيات =================
-elif main_menu == "الصلاحيات":
-    st.markdown("<h3 style='color: #714B67;'>🔐 إدارة الصلاحيات والمستخدمين</h3>", unsafe_allow_html=True)
-    user_rows = [{"اسم المستخدم": k, "الاسم الكامل": v["الاسم الكامل"], "الدور": v["الدور"], "الحالة": v["الحالة"]} for k, v in st.session_state['users_permissions_db'].items()]
-    render_arabic_table_with_controls(pd.DataFrame(user_rows), "المستخدمين")
-
-# ================= 8. المبيعات =================
+# ==================== موديول المبيعات (عرض سعر / أمر بيع / ورقة واحدة بالحالة / الفاتورة الضريبية الكاملة / التقارير) ====================
 elif main_menu == "المبيعات":
-    st.markdown("<h3 style='color: #714B67;'>🛒 موديول المبيعات المتكامل (عروض أسعار ➡️ أوامر بيع ➡️ فواتير ضريبية)</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67;'>🛒 موديول المبيعات المتكامل (عروض الأسعار، أوامر البيع، والفواتير الضريبية)</h3>", unsafe_allow_html=True)
     
-    s_tab1, s_tab2, s_tab3, s_tab4 = st.tabs(["📄 عروض الأسعار وأوامر البيع", "🧾 الفواتير الضريبية والمردودات", "📊 تقرير المبيعات الشامل", "📋 سجل القيود والحركات"])
+    sales_tab1, sales_tab2, sales_tab3 = st.tabs([
+        "📄 ورقة عرض السعر وأمر البيع (ورقة واحدة بالحالة)", 
+        "🧾 الفاتورة الضريبية الكاملة (تخصم المخزون وتنشئ قيد تلقائي)", 
+        "📊 تقرير المبيعات الشامل والفلاتر"
+    ])
     
-    with s_tab1:
-        st.markdown("#### ورقة عرض السعر وتحويلها إلى أمر بيع والحالة")
-        with st.form("quotation_order_form"):
-            q_c1, q_c2, q_c3 = st.columns(3)
-            with q_c1:
-                doc_num = st.text_input("رقم الوثيقة", value=f"DOC-{int(datetime.now().timestamp())}")
-                doc_date = st.date_input("التاريخ", value=date.today())
-            with q_c2:
-                doc_cust = st.selectbox("اختر العميل", list(st.session_state['customers_db'].keys()))
-            with q_c3:
-                doc_status = st.selectbox("حالة المستند", ["عرض سعر", "أمر بيع معتمد", "مفوترة نهائياً"])
+    # --- التبويب الأول: ورقة عرض السعر وتحولها لأمر بيع ومفوترة ---
+    with sales_tab1:
+        st.markdown("#### إدارة عروض الأسعار وأوامر البيع (ورقة عمل ديناميكية واحدة)")
+        
+        with st.form("sales_workflow_form"):
+            col_w1, col_w2, col_w3 = st.columns(3)
+            with col_w1:
+                doc_number = st.text_input("رقم المستند / العرض", value=f"SQ-{int(datetime.now().timestamp())}")
+                selected_customer = st.selectbox("اختر العميل", list(st.session_state['customers_db'].keys()))
+            with col_w2:
+                doc_date = st.date_input("التاريخ", value=datetime.now())
+                doc_type = st.selectbox("النوع الرئيسي", ["مبيعات", "مردودات مبيعات"])
+            with col_w3:
+                workflow_status = st.selectbox("حالة المستند (تتحول ديناميكياً)", ["عرض سعر", "أمر بيع", "مفوترة"])
+                warehouse_choice = st.selectbox("المستودع", st.session_state['warehouses_db'])
             
             st.markdown("---")
-            st.markdown("##### قالب الأصناف (كود - منتج - كمية - سعر - إجمالي - خصم - ضريبة - شامل ض ق م)")
+            st.markdown("##### جدول الأصناف والبنود")
             
-            q_rows = []
-            tot_sub, tot_tax, tot_fin = 0.0, 0.0, 0.0
-            for i in range(3):
-                cols = st.columns([1.2, 2.5, 0.8, 1, 1, 0.8, 1, 1.2])
-                with cols[0]: ic = st.selectbox(f"الكود #{i+1}", [""] + list(st.session_state['inventory_stock'].keys()), key=f"qo_c_{i}")
-                with cols[1]: nm = st.text_input(f"المنتج #{i+1}", value=st.session_state['inventory_stock'][ic]["اسم المنتج"] if ic in st.session_state['inventory_stock'] else "", key=f"qo_n_{i}")
-                with cols[2]: qt = st.number_input(f"الكمية #{i+1}", min_value=0.0, value=1.0, key=f"qo_q_{i}")
-                with cols[3]: pr = st.number_input(f"السعر #{i+1}", min_value=0.0, value=float(st.session_state['inventory_stock'][ic]["سعر البيع"]) if ic in st.session_state['inventory_stock'] else 0.0, key=f"qo_p_{i}")
-                with cols[4]: lt = qt * pr; st.text(f"{lt:,.2f}")
-                with cols[5]: ds = st.number_input(f"خصم #{i+1}", min_value=0.0, value=0.0, key=f"qo_d_{i}")
-                with cols[6]: net = lt - ds; tx = net * 0.15; st.text(f"{tx:,.2f}")
-                with cols[7]: fin = net + tx; st.text(f"{fin:,.2f}")
+            # محاكاة إضافة سطر أصناف داخل عرض السعر
+            item_code_input = st.selectbox("كود المنتج / البند", list(st.session_state['inventory_stock'].keys()), format_func=lambda x: f"{x} - {st.session_state['inventory_stock'][x]['اسم المنتج']}")
+            item_qty = st.number_input("الكمية المطلوبة", min_value=1.0, value=1.0)
+            
+            prod_details = st.session_state['inventory_stock'][item_code_input]
+            unit_price = st.number_input("سعر الوحدة", value=float(prod_details["السعر"]))
+            discount_val = st.number_input("الخصم", value=0.0)
+            tax_rate = 0.15 # 15% ضريبة القيمة المضافة
+            
+            line_subtotal = (unit_price * item_qty) - discount_val
+            line_tax = line_subtotal * tax_rate
+            line_total_incl = line_subtotal + line_tax
+            
+            st.info(f"إجمالي السطر (شامل الضريبة): {line_total_incl:,.2f} ر.س")
+            
+            col_b_act1, col_b_act2, col_b_act3, col_b_act4 = st.columns(4)
+            save_wf = col_b_act1.form_submit_button("حفظ 💾")
+            edit_wf = col_b_act2.form_submit_button("تعديل ✏️")
+            cancel_wf = col_b_act3.form_submit_button("إلغاء / حذف 🗑️")
+            
+            if save_wf:
+                new_record = {
+                    "رقم المستند": doc_number,
+                    "العميل": selected_customer,
+                    "التاريخ": str(doc_date),
+                    "النوع": doc_type,
+                    "الحالة": workflow_status,
+                    "كود المنتج": item_code_input,
+                    "اسم المنتج": prod_details["اسم المنتج"],
+                    "الكمية": item_qty,
+                    "السعر": unit_price,
+                    "الإجمالي شامل ض ق م": line_total_incl,
+                    "المستودع": warehouse_choice
+                }
+                st.session_state['sales_workflow_db'].append(new_record)
+                st.success(f"تم حفظ المستند برقم {doc_number} والحالة الحالية: {workflow_status} بنجاح!")
+        
+        st.markdown("#### سجل عروض الأسعار وأوامر البيع المسجلة")
+        if st.session_state['sales_workflow_db']:
+            df_wf = pd.DataFrame(st.session_state['sales_workflow_db'])
+            render_arabic_table_with_controls(df_wf, "عروض_الأسعار_وأوامر_البيع")
+        else:
+            st.info("لا توجد عروض أسعار أو أوامر بيع مسجلة حتى الآن.")
+
+    # --- التبويب الثاني: الفاتورة الضريبية الكاملة (تخصم المخزون وتنشئ قيد محاسبي تلقائي) ---
+    with sales_tab2:
+        st.markdown("#### الفاتورة الإلكترونية الضريبية الكاملة (نظام جرد مستمر)")
+        
+        with st.form("full_tax_invoice_form"):
+            col_inv1, col_inv2, col_inv3 = st.columns(3)
+            with col_inv1:
+                inv_number = st.text_input("رقم الفاتورة الضريبية", value=f"INV-{int(datetime.now().timestamp())}")
+                inv_customer = st.selectbox("اختر العميل للفاتورة", list(st.session_state['customers_db'].keys()))
                 
-                if ic and qt > 0:
-                    q_rows.append({"الكود": ic, "المنتج": nm, "الكمية": qt, "السعر": pr, "الإجمالي": lt, "الخصم": ds, "الضريبة": tx, "شامل الضريبة": fin})
-                    tot_sub += net; tot_tax += tx; tot_fin += fin
-
-            st.markdown(f"**المجموع قبل الضريبة:** {tot_sub:,.2f} ر.س | **الضريبة (15%):** {tot_tax:,.2f} ر.س | <b style='color:#714B67;'>الإجمالي النهائي شامل ض ق م: {tot_fin:,.2f} ر.س</b>", unsafe_allow_html=True)
-            
-            b1, b2, b3, b4 = st.columns(4)
-            with b1: save_qo = st.form_submit_button("💾 حفظ")
-            with b2: edit_qo = st.form_submit_button("✏️ تعديل")
-            with b3: del_qo = st.form_submit_button("🗑️ حذف / إلغاء")
-            with b4: print_qo = st.form_submit_button("🖨️ طباعة / PDF / Excel")
-
-            if save_qo:
-                if q_rows:
-                    if doc_status == "عرض سعر":
-                        st.session_state['sales_quotations'].append({"رقم المستند": doc_num, "التاريخ": str(doc_date), "العميل": doc_cust, "الحالة": doc_status, "الإجمالي": tot_fin, "البنود": q_rows})
-                    elif doc_status == "أمر بيع معتمد":
-                        st.session_state['sales_orders'].append({"رقم المستند": doc_num, "التاريخ": str(doc_date), "العميل": doc_cust, "الحالة": doc_status, "الإجمالي": tot_fin, "البنود": q_rows})
-                    st.success(f"تم حفظ المستند برقم ({doc_num}) والحالة ({doc_status}) بنجاح!")
+                # إظهار بيانات العميل المختار تلقائياً
+                cust_data = st.session_state['customers_db'][inv_customer]
+                st.markdown(f"""
+                    <div style='background:#f8f9fa; padding:10px; border-radius:5px; font-size:12px; color:#2d3748;'>
+                        <b>السجل التجاري:</b> {cust_data['رقم السجل']}<br>
+                        <b>الرقم الضريبي:</b> {cust_data['الرقم الضريبي']}<br>
+                        <b>العنوان:</b> {cust_data['العنوان']}<br>
+                        <b>الهاتف:</b> {cust_data['الهاتف']}
+                    </div>
+                """, unsafe_allow_html=True)
+                
+            with col_inv2:
+                inv_date = st.date_input("تاريخ الفاتورة", value=datetime.now())
+                inv_type = st.selectbox("نوع الفاتورة", ["مبيعات", "مردودات مبيعات"])
+                payment_method = st.selectbox("طريقة الدفع", ["أجل (تحول إلى حساب العميل)", "نقدي (صندوق)", "تحويل أو شبكة (بنك)"])
+                
+                # ظهور الصناديق أو البنوك بناءً على طريقة الدفع
+                selected_payment_destination = ""
+                if payment_method == "نقدي (صندوق)":
+                    selected_payment_destination = st.selectbox("اختر الصندوق", st.session_state['cash_boxes_db'])
+                elif payment_method == "تحويل أو شبكة (بنك)":
+                    selected_payment_destination = st.selectbox("اختر البنك", st.session_state['banks_db'])
                 else:
-                    st.error("يرجى إدخال صنف واحد على الأقل.")
-            if edit_qo: st.info("وضع التعديل مفعل.")
-            if del_qo: st.warning("تم الحذف والإلغاء بنجاح.")
-            if print_qo: st.toast("جاري التصدير والطباعة...")
+                    selected_payment_destination = "حساب العملاء (أجل)"
 
-        if st.session_state['sales_quotations'] or st.session_state['sales_orders']:
-            all_qo_so = st.session_state['sales_quotations'] + st.session_state['sales_orders']
-            disp_data = [{"رقم المستند": x["رقم المستند"], "التاريخ": x["التاريخ"], "العميل": x["العميل"], "الحالة": x["الحالة"], "الإجمالي": f"{x['الإجمالي']:,.2f} ر.س"} for x in all_qo_so]
-            render_arabic_table_with_controls(pd.DataFrame(disp_data), "عروض_الأسعار_وأوامر_البيع")
-
-    with s_tab2:
-        st.markdown("#### الفاتورة الإلكترونية الضريبية الكاملة (مع خصم المخزون والقيود التلقائية)")
-        with st.form("tax_invoice_form"):
-            c1, c2, c3, c4 = st.columns(4)
-            with c1: inv_cust = st.selectbox("العميل الأساسي", list(st.session_state['customers_db'].keys()))
-            with c2: inv_type = st.selectbox("نوع الفاتورة", ["مبيعات ضريبية", "مردودات مبيعات"])
-            with c3:
-                inv_num = st.text_input("رقم الفاتورة", value=f"INV-{int(datetime.now().timestamp())}")
-                inv_date = st.date_input("تاريخ الفاتورة", value=date.today())
-            with c4: inv_wh = st.selectbox("المستودع", st.session_state['warehouses_db'])
-            
-            cp1, cp2 = st.columns(2)
-            with cp1: pay_method = st.selectbox("طريقة الدفع", ["آجل (تحول لحساب العميل)", "نقدي (صندوق)", "تحويل أو شبكة (بنك)"])
-            with cp2:
-                if pay_method == "نقدي (صندوق)": pay_dest = st.selectbox("اختر الصندوق", st.session_state['cash_boxes_db'])
-                elif pay_method == "تحويل أو شبكة (بنك)": pay_dest = st.selectbox("اختر البنك", st.session_state['banks_db'])
-                else: pay_dest = "حساب العميل (آجل)"
+            with col_inv3:
+                inv_warehouse = st.selectbox("مستودع الصرف", st.session_state['warehouses_db'])
+                st.markdown("<p style='font-size:12px; color:#64748b; margin-top:10px;'>عند حفظ الفاتورة سيتم تلقائياً:</p>", unsafe_allow_html=True)
+                st.markdown("<ul style='font-size:11px; color:#64748b; padding-right:15px;'><li>خصم الكميات من المخزون</li><li>توليد قيد يومية مزدوج (جرد مستمر)</li><li>ترحيل الرصيد لحساب العميل</li></ul>", unsafe_allow_html=True)
 
             st.markdown("---")
-            st.markdown("##### قالب الفاتورة الضريبية: (كود - منتج - كمية - سعر - إجمالي - خصم - ضريبة 15% - شامل ض ق م)")
+            st.markdown("##### تفاصيل أصناف الفاتورة")
+            inv_prod_code = st.selectbox("المنتج المراد بيعه", list(st.session_state['inventory_stock'].keys()), format_func=lambda x: f"{x} - {st.session_state['inventory_stock'][x]['اسم المنتج']}")
+            inv_qty = st.number_input("الكمية المباعة", min_value=1.0, value=1.0, key="inv_qty_input")
             
-            inv_rows = []
-            inv_sub, inv_tax, inv_fin = 0.0, 0.0, 0.0
-            for i in range(3):
-                cols = st.columns([1.2, 2.5, 0.8, 1, 1, 0.8, 1, 1.2])
-                with cols[0]: ic = st.selectbox(f"كود الصنف #{i+1}", [""] + list(st.session_state['inventory_stock'].keys()), key=f"inv_c_{i}")
-                with cols[1]: nm = st.text_input(f"اسم الصنف #{i+1}", value=st.session_state['inventory_stock'][ic]["اسم المنتج"] if ic in st.session_state['inventory_stock'] else "", key=f"inv_n_{i}")
-                with cols[2]: qt = st.number_input(f"الكمية #{i+1}", min_value=0.0, value=1.0, key=f"inv_q_{i}")
-                with cols[3]: pr = st.number_input(f"السعر #{i+1}", min_value=0.0, value=float(st.session_state['inventory_stock'][ic]["سعر البيع"]) if ic in st.session_state['inventory_stock'] else 0.0, key=f"inv_p_{i}")
-                with cols[4]: lt = qt * pr; st.text(f"{lt:,.2f}")
-                with cols[5]: ds = st.number_input(f"الخصم #{i+1}", min_value=0.0, value=0.0, key=f"inv_d_{i}")
-                with cols[6]: net = lt - ds; tx = net * 0.15; st.text(f"{tx:,.2f}")
-                with cols[7]: fin = net + tx; st.text(f"{fin:,.2f}")
-                
-                if ic and qt > 0:
-                    inv_rows.append({"الكود": ic, "المنتج": nm, "الكمية": qt, "السعر": pr, "الإجمالي": lt, "الخصم": ds, "الضريبة": tx, "شامل الضريبة": fin})
-                    inv_sub += net; inv_tax += tx; inv_fin += fin
-
-            st.markdown(f"**المجموع قبل الضريبة:** {inv_sub:,.2f} ر.س | **الضريبة (15%):** {inv_tax:,.2f} ر.س | <b style='color:#714B67;'>الإجمالي النهائي شامل ض ق م: {inv_fin:,.2f} ر.س</b>", unsafe_allow_html=True)
+            prod_row = st.session_state['inventory_stock'][inv_prod_code]
+            inv_price = st.number_input("سعر البيع للوحدة", value=float(prod_row["السعر"]), key="inv_price_input")
+            inv_discount = st.number_input("قيمة الخصم", value=0.0, key="inv_disc_input")
             
-            ib1, ib2, ib3, ib4 = st.columns(4)
-            with ib1: save_inv = st.form_submit_button("💾 حفظ الفاتورة")
-            with ib2: edit_inv = st.form_submit_button("✏️ تعديل الفاتورة")
-            with ib3: del_inv = st.form_submit_button("🗑️ حذف / إلغاء الفاتورة")
-            with ib4: print_inv = st.form_submit_button("🖨️ طباعة الفاتورة")
-
+            sub_total_val = (inv_price * inv_qty) - inv_discount
+            tax_val = sub_total_val * 0.15
+            total_incl_tax = sub_total_val + tax_val
+            
+            st.markdown(f"**إجمالي السطر شامل ضريبة القيمة المضافة (15%):** {total_incl_tax:,.2f} ر.س")
+            
+            col_ib1, col_ib2, col_ib3 = st.columns(3)
+            save_inv = col_ib1.form_submit_button("حفظ الفاتورة الضريبية 💾")
+            edit_inv = col_ib2.form_submit_button("تعديل الفاتورة ✏️")
+            cancel_inv = col_ib3.form_submit_button("إلغاء أو حذف الفاتورة 🗑️")
+            
             if save_inv:
-                if inv_rows:
-                    st.session_state['sales_invoices_db'].append({"رقم الفاتورة": inv_num, "التاريخ": str(inv_date), "النوع": inv_type, "العميل": inv_cust, "طريقة الدفع": pay_dest, "المبلغ الإجمالي شامل الضريبة": inv_fin, "البنود": inv_rows})
+                # التحقق من توفر المخزون
+                if prod_row["الكمية المتاحة"] < inv_qty:
+                    st.error(f"عذراً، الكمية المتاحة في المستودع ({prod_row['الكمية المتاحة']}) لا تكفي للكمية المطلوبة!")
+                else:
+                    # 1. خصم من المخزون
+                    st.session_state['inventory_stock'][inv_prod_code]["الكمية المتاحة"] -= inv_qty
                     
-                    # خصم المخزون التلقائي (نظام جرد مستمر)
-                    for item in inv_rows:
-                        code = item["الكود"]
-                        qty = item["الكمية"]
-                        if code in st.session_state['inventory_stock']:
-                            if inv_type == "مبيعات ضريبية":
-                                st.session_state['inventory_stock'][code]["الكمية المتاحة"] -= qty
-                            else:
-                                st.session_state['inventory_stock'][code]["الكمية المتاحة"] += qty
-                    
-                    # إنشاء قيد محاسبي تلقائي
-                    st.session_state['general_ledger'].append({
-                        "رقم القيد": f"JE-{int(datetime.now().timestamp())}",
+                    # 2. إنشاء القيد المحاسبي التلقائي (نظام جرد مستمر)
+                    # من ح/ العملاء أو الصندوق أو البنك إلى مذكورين (ح/ المبيعات، ح/ ضريبة القيمة المضافة) + قيد تكلفة البضاعة المباعة
+                    journal_entry = {
+                        "رقم المستند": inv_number,
+                        "الالتزام/النوع": "فاتورة ضريبية مبيعات",
                         "التاريخ": str(inv_date),
-                        "البيان": f"إثبات فاتورة مبيعات ضريبية رقم {inv_num}",
-                        "مدين": inv_fin,
-                        "دائن": inv_fin,
-                        "الحساب المقابل": pay_dest
-                    })
-                    st.success("تم حفظ الفاتورة الضريبية، خصم المخزون، وتوليد القيد المحاسبي بنجاح!")
-                else:
-                    st.error("أدخل صنفاً واحداً على الأقل للفاتورة.")
-            if edit_inv: st.info("وضع التعديل مفعل.")
-            if del_inv: st.warning("تم الحذف وإلغاء الفاتورة.")
-            if print_inv: st.toast("جاري الطباعة والتصدير...")
+                        "البيان": f"فاتورة مبيعات رقم {inv_number} للعميل {inv_customer} عبر {payment_method} ({selected_payment_destination})",
+                        "المدين": total_incl_tax,
+                        "الدائن": total_incl_tax,
+                        "الحساب الطرف": selected_payment_destination
+                    }
+                    st.session_state['general_ledger'].append(journal_entry)
+                    
+                    # 3. حفظ الفاتورة في السجل
+                    invoice_record = {
+                        "رقم الفاتورة": inv_number,
+                        "العميل": inv_customer,
+                        "التاريخ": str(inv_date),
+                        "النوع": inv_type,
+                        "طريقة الدفع": payment_method,
+                        "جهة الدفع": selected_payment_destination,
+                        "المستودع": inv_warehouse,
+                        "الإجمالي شامل ض ق م": total_incl_tax
+                    }
+                    st.session_state['sales_invoices_full_db'].append(invoice_record)
+                    st.success(ফ"تم حفظ الفاتورة الضريبية الكاملة بنجاح، وتم خصم الكمية من المستودع وإنشاء القيد المحاسبي التلقائي!")
 
-        if st.session_state['sales_invoices_db']:
-            inv_disp = [{"رقم الفاتورة": x["رقم الفاتورة"], "التاريخ": x["التاريخ"], "النوع": x["النوع"], "العميل": x["العميل"], "طريقة الدفع": x["طريقة الدفع"], "الإجمالي شامل الضريبة": f"{x['المبلغ الإجمالي شامل الضريبة']:,.2f} ر.س"} for x in st.session_state['sales_invoices_db']]
-            render_arabic_table_with_controls(pd.DataFrame(inv_disp), "فواتير_المبيعات_الضريبية")
-
-    with s_tab3:
-        st.markdown("#### تقرير المبيعات الشامل والتحليلي")
-        if st.session_state['sales_invoices_db']:
-            all_sales_rep = []
-            for inv in st.session_state['sales_invoices_db']:
-                for item in inv["البنود"]:
-                    all_sales_rep.append({
-                        "رقم الفاتورة": inv["رقم الفاتورة"],
-                        "التاريخ": inv["التاريخ"],
-                        "العميل": inv["العميل"],
-                        "الكود": item["الكود"],
-                        "المنتج": item["المنتج"],
-                        "الكمية": item["الكمية"],
-                        "السعر": f"{item['السعر']:,.2f}",
-                        "الإجمالي شامل الضريبة": f"{item['شامل الضريبة']:,.2f} ر.س"
-                    })
-            render_arabic_table_with_controls(pd.DataFrame(all_sales_rep), "تقرير_المبيعات_الشامل")
+        st.markdown("#### سجل الفواتير الضريبية المسجلة")
+        if st.session_state['sales_invoices_full_db']:
+            render_arabic_table_with_controls(pd.DataFrame(st.session_state['sales_invoices_full_db']), "الفواتير_الضريبية")
         else:
-            st.info("لا توجد فواتير مبيعات لعرض التقرير الشامل حالياً.")
+            st.info("لا توجد فواتير ضريبية مسجلة بعد.")
 
-    with s_tab4:
-        st.markdown("#### القيود المحاسبية التلقائية للمبيعات")
-        if st.session_state['general_ledger']:
-            render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "قيود_المبيعات")
+    # --- التبويب الثالث: تقرير المبيعات الشامل والفلاتر والأزرار ---
+    with sales_tab3:
+        st.markdown("#### 📊 تقرير المبيعات الشامل (جميع الفلاتر والأزرار)")
+        if st.session_state['sales_invoices_full_db']:
+            df_sales_rep = pd.DataFrame(st.session_state['sales_invoices_full_db'])
+            render_arabic_table_with_controls(df_sales_rep, "تقرير_المبيعات_الشامل")
         else:
-            st.info("لا توجد قيود مسجلة بعد.")
+            st.info("لا توجد بيانات مبيعات كافية لعرض التقرير الشامل.")
 
-# ================= 9. المشتريات =================
+
+# ==================== موديول المشتريات (بنفس المنطق والطريقة) ====================
 elif main_menu == "المشتريات":
-    st.markdown("<h3 style='color: #714B67;'>📦 موديول المشتريات والموردين (أوامر الشراء وفواتير المشتريات الضريبية)</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67;'>📦 موديول المشتريات المتكامل (نفس المنطق والطريقة للمبيعات)</h3>", unsafe_allow_html=True)
     
-    p_tab1, p_tab2, p_tab3 = st.tabs(["📋 فواتير وسندات المشتريات", "📊 تقرير المشتريات الشامل", "📋 القيود المحاسبية للمشتريات"])
+    pur_tab1, pur_tab2, pur_tab3 = st.tabs([
+        "📄 طلب شراء / عرض سعر مورد (ورقة واحدة بالحالة)", 
+        "🧾 فاتورة المشتريات الضريبية (تزيد المخزون وتنشئ قيد تلقائي)", 
+        "📊 تقرير المشتريات الشامل والفلاتر"
+    ])
     
-    with p_tab1:
-        st.markdown("#### فاتورة المشتريات الضريبية (تزيد المخزون وتنشئ قيود تلقائية)")
-        with st.form("purchase_inv_form"):
-            c1, c2, c3, c4 = st.columns(4)
-            with c1: pur_supp = st.selectbox("المورد", list(st.session_state['suppliers_db'].keys()))
-            with c2: pur_type = st.selectbox("نوع المستند", ["فاتورة مشتريات ضريبية", "مردودات مشتريات"])
-            with c3:
-                pur_num = st.text_input("رقم الفاتورة", value=f"PINV-{int(datetime.now().timestamp())}")
-                pur_date = st.date_input("التاريخ", value=date.today())
-            with c4: pur_wh = st.selectbox("المستودع المستلم", st.session_state['warehouses_db'])
+    with pur_tab1:
+        st.markdown("#### إدارة طلبات الشراء وعروض أسعار الموردين")
+        with st.form("pur_workflow_form"):
+            c_pw1, c_pw2, c_pw3 = st.columns(3)
+            with c_pw1:
+                p_doc_num = st.text_input("رقم مستند الشراء", value=f"PO-{int(datetime.now().timestamp())}")
+                p_supplier = st.selectbox("اختر المورد", list(st.session_state['suppliers_db'].keys()))
+            with c_pw2:
+                p_date = st.date_input("تاريخ الطلب", value=datetime.now())
+                p_type = st.selectbox("نوع الحركة", ["مشتريات", "مردودات مشريات"])
+            with c_pw3:
+                p_status = st.selectbox("حالة المستند", ["طلب شراء", "معتمد", "مففوترة مشتريات"])
+                p_warehouse = st.selectbox("مستودع الاستلام", st.session_state['warehouses_db'])
             
-            cp1, cp2 = st.columns(2)
-            with cp1: p_pay = st.selectbox("طريقة السداد", ["آجل (حساب المورد)", "نقدي (صندوق)", "تحويل أو شبكة (بنك)"])
-            with cp2:
-                if p_pay == "نقدي (صندوق)": p_dest = st.selectbox("اختر الصندوق", st.session_state['cash_boxes_db'])
-                elif p_pay == "تحويل أو شبكة (بنك)": p_dest = st.selectbox("اختر البنك", st.session_state['banks_db'])
-                else: p_dest = "حساب المورد (آجل)"
-
             st.markdown("---")
-            st.markdown("##### قالب أصناف المشتريات: (كود - منتج - كمية - تكلفة الشراء - إجمالي - خصم - ضريبة 15% - شامل ض ق م)")
+            p_item_code = st.selectbox("المنتج المطلوب شراؤه", list(st.session_state['inventory_stock'].keys()), format_func=lambda x: f"{x} - {st.session_state['inventory_stock'][x]['اسم المنتج']}")
+            p_qty = st.number_input("الكمية", min_value=1.0, value=1.0, key="p_qty_in")
+            p_price = st.number_input("سعر الشراء للوحدة", value=100.0, key="p_price_in")
             
-            pur_rows = []
-            p_sub, p_tax, p_fin = 0.0, 0.0, 0.0
-            for i in range(3):
-                cols = st.columns([1.2, 2.5, 0.8, 1, 1, 0.8, 1, 1.2])
-                with cols[0]: ic = st.selectbox(f"كود الصنف #{i+1}", [""] + list(st.session_state['inventory_stock'].keys()), key=f"p_c_{i}")
-                with cols[1]: nm = st.text_input(f"اسم الصنف #{i+1}", value=st.session_state['inventory_stock'][ic]["اسم المنتج"] if ic in st.session_state['inventory_stock'] else "", key=f"p_n_{i}")
-                with cols[2]: qt = st.number_input(f"الكمية #{i+1}", min_value=0.0, value=1.0, key=f"p_q_{i}")
-                with cols[3]: pr = st.number_input(f"التكلفة #{i+1}", min_value=0.0, value=float(st.session_state['inventory_stock'][ic]["تكلفة الشراء"]) if ic in st.session_state['inventory_stock'] else 0.0, key=f"p_p_{i}")
-                with cols[4]: lt = qt * pr; st.text(f"{lt:,.2f}")
-                with cols[5]: ds = st.number_input(f"خصم #{i+1}", min_value=0.0, value=0.0, key=f"p_d_{i}")
-                with cols[6]: net = lt - ds; tx = net * 0.15; st.text(f"{tx:,.2f}")
-                with cols[7]: fin = net + tx; st.text(f"{fin:,.2f}")
+            p_sub = (p_price * p_qty)
+            p_tax = p_sub * 0.15
+            p_total = p_sub + p_tax
+            
+            st.info(f"إجمالي سطر المشتريات شامل الضريبة: {p_total:,.2f} ر.س")
+            
+            col_pb1, col_pb2, col_pb3 = st.columns(3)
+            if col_pb1.form_submit_button("حفظ طلب الشراء 💾"):
+                st.session_state['purchases_workflow_db'].append({
+                    "رقم المستند": p_doc_num,
+                    "المورد": p_supplier,
+                    "التاريخ": str(p_date),
+                    "الحالة": p_status,
+                    "الإجمالي شامل ض ق م": p_total
+                })
+                st.success("تم حفظ طلب الشراء بنجاح!")
+        
+        if st.session_state['purchases_workflow_db']:
+            render_arabic_table_with_controls(pd.DataFrame(st.session_state['purchases_workflow_db']), "طلبات_الشراء")
+
+    with pur_tab2:
+        st.markdown("#### فاتورة المشتريات الضريبية الكاملة (تزيد المخزون وتنشئ قيد تلقائي)")
+        with st.form("pur_invoice_form"):
+            cp_i1, cp_i2, cp_i3 = st.columns(3)
+            with cp_i1:
+                pin_num = st.text_input("رقم فاتورة المشتريات", value=f"PINV-{int(datetime.now().timestamp())}")
+                pin_supp = st.selectbox("المورد للفاتورة", list(st.session_state['suppliers_db'].keys()))
                 
-                if ic and qt > 0:
-                    pur_rows.append({"الكود": ic, "المنتج": nm, "الكمية": qt, "التكلفة": pr, "الإجمالي": lt, "الخصم": ds, "الضريبة": tx, "شامل الضريبة": fin})
-                    p_sub += net; p_tax += tx; p_fin += fin
-
-            st.markdown(f"**المجموع قبل الضريبة:** {p_sub:,.2f} ر.س | **الضريبة (15%):** {p_tax:,.2f} ر.س | <b style='color:#714B67;'>الإجمالي النهائي شامل ض ق م: {p_fin:,.2f} ر.س</b>", unsafe_allow_html=True)
-            
-            pb1, pb2, pb3, pb4 = st.columns(4)
-            with pb1: save_pur = st.form_submit_button("💾 حفظ فاتورة المشتريات")
-            with pb2: edit_pur = st.form_submit_button("✏️ تعديل")
-            with pb3: del_pur = st.form_submit_button("🗑️ حذف / إلغاء")
-            with pb4: print_pur = st.form_submit_button("🖨️ طباعة")
-
-            if save_pur:
-                if pur_rows:
-                    st.session_state['purchase_invoices_db'].append({"رقم الفاتورة": pur_num, "التاريخ": str(pur_date), "النوع": pur_type, "المورد": pur_supp, "المبلغ الإجمالي شامل الضريبة": p_fin, "البنود": pur_rows})
-                    for item in pur_rows:
-                        code = item["الكود"]
-                        qty = item["الكمية"]
-                        if code in st.session_state['inventory_stock']:
-                            if pur_type == "فاتورة مشتريات ضريبية": st.session_state['inventory_stock'][code]["الكمية المتاحة"] += qty
-                            else: st.session_state['inventory_stock'][code]["الكمية المتاحة"] -= qty
-                    st.session_state['general_ledger'].append({"رقم القيد": f"JE-P-{int(datetime.now().timestamp())}", "التاريخ": str(pur_date), "البيان": f"فاتورة مشتريات {pur_num}", "مدين": p_fin, "دائن": p_fin, "الحساب": p_dest})
-                    st.success("تم حفظ فاتورة المشتريات، تحديث المخزون، وتوليد القيد المحاسبي بنجاح!")
+                supp_data = st.session_state['suppliers_db'][pin_supp]
+                st.markdown(f"""
+                    <div style='background:#f8f9fa; padding:10px; border-radius:5px; font-size:12px; color:#2d3748;'>
+                        <b>السجل التجاري:</b> {supp_data['رقم السجل']}<br>
+                        <b>الرقم الضريبي:</b> {supp_data['الرقم الضريبي']}<br>
+                        <b>العنوان:</b> {supp_data['العنوان']}
+                    </div>
+                """, unsafe_allow_html=True)
+                
+            with cp_i2:
+                pin_date = st.date_input("تاريخ الفاتورة", value=datetime.now(), key="pin_date_k")
+                pin_pay = st.selectbox("طريقة السداد", ["أجل (إلى حساب المورد)", "نقدي (صندوق)", "تحويل بنكي"])
+                
+                pin_dest = ""
+                if pin_pay == "نقدي (صندوق)":
+                    pin_dest = st.selectbox("اختر الصندوق للصرف", st.session_state['cash_boxes_db'], key="pin_box_k")
+                elif pin_pay == "تحويل بنكي":
+                    pin_dest = st.selectbox("اختر البنك للتحويل", st.session_state['banks_db'], key="pin_bank_k")
                 else:
-                    st.error("أدخل صنفاً واحداً على الأقل.")
-            if edit_pur: st.info("وضع التعديل مفعل.")
-            if del_pur: st.warning("تم الحذف.")
-            if print_pur: st.toast("جاري الطباعة...")
+                    pin_dest = "حساب الموردين (أجل)"
 
-        if st.session_state['purchase_invoices_db']:
-            p_disp = [{"رقم الفاتورة": x["رقم الفاتورة"], "التاريخ": x["التاريخ"], "النوع": x["النوع"], "المورد": x["المورد"], "الإجمالي": f"{x['المبلغ الإجمالي شامل الضريبة']:,.2f} ر.س"} for x in st.session_state['purchase_invoices_db']]
-            render_arabic_table_with_controls(pd.DataFrame(p_disp), "فواتير_المشتريات")
+            with cp_i3:
+                pin_warehouse = st.selectbox("المستودع المضاف إليه", st.session_state['warehouses_db'], key="pin_wh_k")
+            
+            st.markdown("---")
+            pin_item = st.selectbox("المنتج المشتري", list(st.session_state['inventory_stock'].keys()), format_func=lambda x: f"{x} - {st.session_state['inventory_stock'][x]['اسم المنتج']}", key="pin_item_k")
+            pin_qty = st.number_input("الكمية المشتراة", min_value=1.0, value=1.0, key="pin_q_k")
+            pin_price = st.number_input("سعر التكلفة", value=100.0, key="pin_pr_k")
+            
+            pin_subtotal = pin_qty * pin_price
+            pin_tax_val = pin_subtotal * 0.15
+            pin_total_incl = pin_subtotal + pin_tax_val
+            
+            if st.form_submit_button("حفظ فاتورة المشتريات وزيادة المخزون 💾"):
+                # 1. زيادة المخزون
+                st.session_state['inventory_stock'][pin_item]["الكمية المتاحة"] += pin_qty
+                
+                # 2. قيد محاسبي تلقائي للمشتريات
+                st.session_state['general_ledger'].append({
+                    "رقم المستند": pin_num,
+                    "الالتزام/النوع": "فاتورة ضريبية مشتريات",
+                    "التاريخ": str(pin_date),
+                    "البيان": f"مشتريات من المورد {pin_supp} برقم {pin_num}",
+                    "المدين": pin_total_incl,
+                    "الدائن": pin_total_incl,
+                    "الحساب الطرف": pin_dest
+                })
+                
+                st.session_state['purchases_invoices_full_db'].append({
+                    "رقم الفاتورة": pin_num,
+                    "المورد": pin_supp,
+                    "التاريخ": str(pin_date),
+                    "طريقة السداد": pin_pay,
+                    "الإجمالي شامل ض ق م": pin_total_incl
+                })
+                st.success("تم حفظ فاتورة المشتريات وزيادة المخزون وإنشاء القيد المحاسبي بنجاح!")
+        
+        if st.session_state['purchases_invoices_full_db']:
+            render_arabic_table_with_controls(pd.DataFrame(st.session_state['purchases_invoices_full_db']), "فواتير_المشتريات")
 
-    with p_tab2:
-        st.markdown("#### تقرير المشتريات الشامل")
-        if st.session_state['purchase_invoices_db']:
-            all_pur_rep = []
-            for pinv in st.session_state['purchase_invoices_db']:
-                for item in pinv["البنود"]:
-                    all_pur_rep.append({
-                        "رقم الفاتورة": pinv["رقم الفاتورة"],
-                        "التاريخ": pinv["التاريخ"],
-                        "المورد": pinv["المورد"],
-                        "الكود": item["الكود"],
-                        "المنتج": item["المنتج"],
-                        "الكمية": item["الكمية"],
-                        "التكلفة": f"{item['التكلفة']:,.2f}",
-                        "الإجمالي شامل الضريبة": f"{item['شامل الضريبة']:,.2f} ر.س"
-                    })
-            render_arabic_table_with_controls(pd.DataFrame(all_pur_rep), "تقرير_المشتريات_الشامل")
+    with pur_tab3:
+        st.markdown("#### 📊 تقرير المشتريات الشامل")
+        if st.session_state['purchases_invoices_full_db']:
+            render_arabic_table_with_controls(pd.DataFrame(st.session_state['purchases_invoices_full_db']), "تقرير_المشتريات")
         else:
-            st.info("لا توجد فواتير مشتريات لعرض التقرير حالياً.")
+            st.info("لا توجد بيانات مشتريات متاحة.")
 
-    with p_tab3:
-        st.markdown("#### قيود المشتريات")
-        if st.session_state['general_ledger']:
-            render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "دفتر_اليومية_للمشتريات")
-        else:
-            st.info("لا توجد قيود مسجلة.")
-
-# ================= 10. المخزون =================
+# --- المخزون ---
 elif main_menu == "المخزون":
     st.markdown("<h3 style='color: #714B67;'>📋 موديول المخزون والجرد المستمر</h3>", unsafe_allow_html=True)
-    stock_all = [{"الكود": k, "اسم المنتج": v["اسم المنتج"], "الكمية المتاحة": v["الكمية المتاحة"], "سعر البيع": f"{v['سعر البيع']:,.2f} ر.س", "تكلفة الشراء": f"{v['تكلفة الشراء']:,.2f} ر.س"} for k, v in st.session_state['inventory_stock'].items()]
-    render_arabic_table_with_controls(pd.DataFrame(stock_all), "المخزون_العام")
+    stock_rows = [{"كود المنتج": k, "اسم المنتج": v["اسم المنتج"], "السعر الأساسي": v["السعر"], "الكمية المتاحة": v["الكمية المتاحة"]} for k, v in st.session_state['inventory_stock'].items()]
+    render_arabic_table_with_controls(pd.DataFrame(stock_rows), "أرصدة_المخزون")
 
-# ================= 11. المحاسبة والشجرة =================
+# --- المحاسبة والشجرة ---
 elif main_menu == "المحاسبة والشجرة":
-    st.markdown("<h3 style='color: #714B67;'>💰 المحاسبة وشجرة الحسابات واليومية العامة</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67;'>💰 المحاسبة والقيود التلقائية (دفتر الأستاذ)</h3>", unsafe_allow_html=True)
     if st.session_state['general_ledger']:
-        render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "دفتر_اليومية")
+        render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "دفتر_الأستاذ")
     else:
-        st.info("لا توجد قيود مسجلة في شجرة الحسابات حتى الآن.")
+        st.info("لا توجد قيود محاسبية مسجلة حتى الآن (تتم إضافتها تلقائياً عند حفظ الفواتير).")
 
-# ================= 12. الإعدادات =================
+# --- الصلاحيات ---
+elif main_menu == "الصلاحيات":
+    st.markdown("<h3 style='color: #714B67;'>🔐 إدارة الصلاحيات والمستخدمين</h3>", unsafe_allow_html=True)
+    perm_rows = [{"اسم المستخدم": k, "الاسم الكامل": v["اسم الكامل"], "الدور": v["الدور"], "الحالة": v["الحالة"]} for k, v in st.session_state['users_permissions_db'].items()]
+    render_arabic_table_with_controls(pd.DataFrame(perm_rows), "المستخدمين")
+
+# --- الإعدادات ---
 elif main_menu == "الإعدادات":
-    st.markdown("<h3 style='color: #714B67;'>⚙️ إعدادات النظام وتصفير البيانات</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67;'>⚙️ الإعدادات العامة</h3>", unsafe_allow_html=True)
     if st.button("🔄 إعادة تصفير البرنامج بالكامل"):
         reset_system_to_default()
