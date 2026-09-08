@@ -65,7 +65,7 @@ if 'projects_db' not in st.session_state:
 if 'cost_centers_db' not in st.session_state:
     st.session_state['cost_centers_db'] = [
         {"كود المركز": "CC-100", "اسم مركز التكلفة": "مركز تكلفة الإدارة العامة"},
-        {"كود المركز": "CC-200", "اسم مركز تكلفة المبيعات والتسويق"}
+        {"كود المركز": "CC-200", "اسم مركز التكلفة": "مركز تكلفة المبيعات والتسويق"}
     ]
 
 if 'users_permissions_db' not in st.session_state:
@@ -104,10 +104,6 @@ st.markdown("""
     }
     .custom-table th { background-color: #714B67; color: white; padding: 8px; text-align: right; white-space: nowrap; }
     .custom-table td { padding: 6px 8px; border-bottom: 1px solid #edf2f7; color: #2d3748; white-space: nowrap; }
-    .official-form-box {
-        background: white; padding: 20px; border-radius: 8px; border: 1px solid #dcdde1;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04); margin-bottom: 20px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -199,7 +195,7 @@ elif main_menu == "الشركاء":
 # ================= 3. الموارد البشرية =================
 elif main_menu == "الموارد البشرية":
     st.markdown("<h3 style='color: #714B67;'>👨‍💼 إدارة الموارد البشرية وشئون الموظفين</h3>", unsafe_allow_html=True)
-    emp_list = [{"كود الموظف": k, "الاسم": v["الاسم الكامل"], "القسم": v["القسم"], "المسمى": v["المسمى الوظيفي"], "الراتب الأساسي": f"{v['راتب الأساسي' if 'راتب الأساسي' in v else 'الراتب الأساسي']:,.2f} ر.س"} for k, v in st.session_state['hr_employees_db'].items()]
+    emp_list = [{"كود الموظف": k, "الاسم": v["الاسم الكامل"], "القسم": v["القسم"], "المسمى": v["المسمى الوظيفي"], "الراتب الأساسي": f"{v['الراتب الأساسي']:,.2f} ر.س"} for k, v in st.session_state['hr_employees_db'].items()]
     render_arabic_table_with_controls(pd.DataFrame(emp_list), "الموظفين")
 
 # ================= 4. الإنتاج =================
@@ -223,7 +219,7 @@ elif main_menu == "الصلاحيات":
     user_rows = [{"اسم المستخدم": k, "الاسم الكامل": v["الاسم الكامل"], "الدور": v["الدور"], "الحالة": v["الحالة"]} for k, v in st.session_state['users_permissions_db'].items()]
     render_arabic_table_with_controls(pd.DataFrame(user_rows), "المستخدمين")
 
-# ================= 8. المبيعات (عروض أسعار، أوامر بيع، فواتير ضريبية متكاملة) =================
+# ================= 8. المبيعات =================
 elif main_menu == "المبيعات":
     st.markdown("<h3 style='color: #714B67;'>🛒 موديول المبيعات (عروض أسعار ➡️ أوامر بيع ➡️ فواتير ضريبية تامة)</h3>", unsafe_allow_html=True)
     
