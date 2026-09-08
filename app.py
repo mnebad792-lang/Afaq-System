@@ -91,7 +91,7 @@ if 'purchase_invoices_db' not in st.session_state:
 if 'general_ledger' not in st.session_state:
     st.session_state['general_ledger'] = []
 
-# --- تنسيقات CSS ---
+# --- تنسيقات CSS مع خاصية Shrink to Fit والاحتواء التلقائي للتقارير ---
 st.markdown("""
     <style>
     .stApp, body, p, span, div, label, input, select {
@@ -104,6 +104,16 @@ st.markdown("""
     }
     .custom-table th { background-color: #714B67; color: white; padding: 8px; text-align: right; white-space: nowrap; }
     .custom-table td { padding: 6px 8px; border-bottom: 1px solid #edf2f7; color: #2d3748; white-space: nowrap; }
+    
+    /* Shrink to Fit لتصغير الجداول والتقارير تلقائياً وتناسب الشاشات */
+    @media print {
+        body { transform: scale(0.9); transform-origin: top right; }
+    }
+    .shrink-container {
+        width: 100%;
+        overflow-x: auto;
+        zoom: 95%;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -115,7 +125,7 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
     with c_f1:
         search_query = st.text_input(f"بحث فوري في {section_name}", key=f"search_{section_name}")
     with c_f2:
-        st.markdown("<p style='font-size:12px; color:#64748b; padding-top:10px;'>فلترة البحث الفعالة مفعلة</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:12px; color:#64748b; padding-top:10px;'>خاصية Shrink to Fit والفلترة مفعلة</p>", unsafe_allow_html=True)
 
     filtered_df = df.copy()
     if search_query:
@@ -129,7 +139,7 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
     with c_b3:
         if st.button("📄 PDF", key=f"pdf_{section_name}"): st.toast("تم التصدير لـ PDF!")
 
-    html_code = "<div style='overflow-x: auto;'><table class='custom-table'><thead><tr>"
+    html_code = "<div class='shrink-container'><table class='custom-table'><thead><tr>"
     for col in filtered_df.columns: html_code += f"<th>{col}</th>"
     html_code += "</tr></thead><tbody>"
     for _, row in filtered_df.iterrows():
@@ -142,7 +152,7 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
 if 'active_module' not in st.session_state:
     st.session_state['active_module'] = "الرئيسية"
 
-# --- القائمة الجانبية (كل الموديولات الـ 12) ---
+# --- القائمة الجانبية (كل الموديولات الـ 12 المتكاملة) ---
 with st.sidebar:
     client_conf = st.session_state['client_license_config']
     st.markdown(f"<h2 style='color: #714B67; text-align: center;'>نظام أفق ERP</h2>", unsafe_allow_html=True)
