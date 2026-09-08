@@ -292,7 +292,6 @@ elif main_menu == "المبيعات":
             st.markdown("---")
             st.markdown("##### جدول الأصناف والبنود")
             
-            # محاكاة إضافة سطر أصناف داخل عرض السعر
             item_code_input = st.selectbox("كود المنتج / البند", list(st.session_state['inventory_stock'].keys()), format_func=lambda x: f"{x} - {st.session_state['inventory_stock'][x]['اسم المنتج']}")
             item_qty = st.number_input("الكمية المطلوبة", min_value=1.0, value=1.0)
             
@@ -346,7 +345,6 @@ elif main_menu == "المبيعات":
                 inv_number = st.text_input("رقم الفاتورة الضريبية", value=f"INV-{int(datetime.now().timestamp())}")
                 inv_customer = st.selectbox("اختر العميل للفاتورة", list(st.session_state['customers_db'].keys()))
                 
-                # إظهار بيانات العميل المختار تلقائياً
                 cust_data = st.session_state['customers_db'][inv_customer]
                 st.markdown(f"""
                     <div style='background:#f8f9fa; padding:10px; border-radius:5px; font-size:12px; color:#2d3748;'>
@@ -362,7 +360,6 @@ elif main_menu == "المبيعات":
                 inv_type = st.selectbox("نوع الفاتورة", ["مبيعات", "مردودات مبيعات"])
                 payment_method = st.selectbox("طريقة الدفع", ["أجل (تحول إلى حساب العميل)", "نقدي (صندوق)", "تحويل أو شبكة (بنك)"])
                 
-                # ظهور الصناديق أو البنوك بناءً على طريقة الدفع
                 selected_payment_destination = ""
                 if payment_method == "نقدي (صندوق)":
                     selected_payment_destination = st.selectbox("اختر الصندوق", st.session_state['cash_boxes_db'])
@@ -397,15 +394,11 @@ elif main_menu == "المبيعات":
             cancel_inv = col_ib3.form_submit_button("إلغاء أو حذف الفاتورة 🗑️")
             
             if save_inv:
-                # التحقق من توفر المخزون
                 if prod_row["الكمية المتاحة"] < inv_qty:
                     st.error(f"عذراً، الكمية المتاحة في المستودع ({prod_row['الكمية المتاحة']}) لا تكفي للكمية المطلوبة!")
                 else:
-                    # 1. خصم من المخزون
                     st.session_state['inventory_stock'][inv_prod_code]["الكمية المتاحة"] -= inv_qty
                     
-                    # 2. إنشاء القيد المحاسبي التلقائي (نظام جرد مستمر)
-                    # من ح/ العملاء أو الصندوق أو البنك إلى مذكورين (ح/ المبيعات، ح/ ضريبة القيمة المضافة) + قيد تكلفة البضاعة المباعة
                     journal_entry = {
                         "رقم المستند": inv_number,
                         "الالتزام/النوع": "فاتورة ضريبية مبيعات",
@@ -417,7 +410,6 @@ elif main_menu == "المبيعات":
                     }
                     st.session_state['general_ledger'].append(journal_entry)
                     
-                    # 3. حفظ الفاتورة في السجل
                     invoice_record = {
                         "رقم الفاتورة": inv_number,
                         "العميل": inv_customer,
@@ -429,7 +421,7 @@ elif main_menu == "المبيعات":
                         "الإجمالي شامل ض ق م": total_incl_tax
                     }
                     st.session_state['sales_invoices_full_db'].append(invoice_record)
-                    st.success(ফ"تم حفظ الفاتورة الضريبية الكاملة بنجاح، وتم خصم الكمية من المستودع وإنشاء القيد المحاسبي التلقائي!")
+                    st.success("تم حفظ الفاتورة الضريبية الكاملة بنجاح، وتم خصم الكمية من المستودع وإنشاء القيد المحاسبي التلقائي!")
 
         st.markdown("#### سجل الفواتير الضريبية المسجلة")
         if st.session_state['sales_invoices_full_db']:
@@ -538,10 +530,8 @@ elif main_menu == "المشتريات":
             pin_total_incl = pin_subtotal + pin_tax_val
             
             if st.form_submit_button("حفظ فاتورة المشتريات وزيادة المخزون 💾"):
-                # 1. زيادة المخزون
                 st.session_state['inventory_stock'][pin_item]["الكمية المتاحة"] += pin_qty
                 
-                # 2. قيد محاسبي تلقائي للمشتريات
                 st.session_state['general_ledger'].append({
                     "رقم المستند": pin_num,
                     "الالتزام/النوع": "فاتورة ضريبية مشتريات",
