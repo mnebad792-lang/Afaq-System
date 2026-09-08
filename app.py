@@ -328,7 +328,7 @@ if 'zatca_vat_returns_db' not in st.session_state:
         }
     ]
 
-# --- تنسيقات CSS مع تصغير الخط للقوائم العلوية لتظهر كاملة ---
+# --- تنسيقات CSS مع تصغير الخط للقوائم العلوية لتظهر كاملة وتحجيم الجداول تلقائياً (Shrink to Fit) ---
 st.markdown("""
     <style>
     .stApp, body, p, span, div, label, input, select {
@@ -543,7 +543,7 @@ elif main_menu == "الشركاء":
                     st.success("تم استيراد وإضافة الشركاء بنجاح!")
                     st.rerun()
             except Exception as e:
-                st.error(fحدث خطأ أثناء قراءة الملف: {e}")
+                st.error(f"حدث خطأ أثناء قراءة الملف: {e}")
 
 elif main_menu == "الموارد البشرية":
     st.markdown("<h3 style='color: #714B67;'>👨‍💼 إدارة الموارد البشرية (HR)</h3>", unsafe_allow_html=True)
@@ -596,7 +596,7 @@ elif main_menu == "الموارد البشرية":
                     st.success("تم استيراد الموظفين بنجاح!")
                     st.rerun()
             except Exception as e:
-                st.error(fحدث خطأ: {e})
+                st.error(f"حدث خطأ: {e}")
 
 elif main_menu == "الإنتاج":
     st.markdown("<h3 style='color: #714B67;'>🏭 إدارة الإنتاج والمصنع/المطبخ</h3>", unsafe_allow_html=True)
@@ -899,7 +899,7 @@ elif main_menu == "المخزون":
                     st.success("تم استيراد الأصناف بنجاح!")
                     st.rerun()
             except Exception as e:
-                st.error(fحدث خطأ: {e})
+                st.error(f"حدث خطأ: {e}")
 
 elif main_menu == "المحاسبة والشجرة":
     st.markdown("<h3 style='color: #714B67;'>💰 النظام المحاسبي والشجرة والقوائم المالية الاحترافية الشاملة</h3>", unsafe_allow_html=True)
