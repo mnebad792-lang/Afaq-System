@@ -335,7 +335,7 @@ st.markdown("""
         direction: rtl !important; text-align: right !important; font-family: 'Segoe UI', Tahoma, sans-serif;
     }
     /* حل مشكلة التداخل العلوي وتوفير مساحة كافية للشريط */
-    .block-container { padding: 5rem 1.5rem 1rem 1.5rem !important; background-color: #f4f6f9; }
+    .block-container { padding: 5rem 1.5rem 1.5rem 1.5rem !important; background-color: #f4f6f9; }
     
     .stButton>button {
         font-size: 12px !important;
@@ -362,26 +362,42 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- شريط الأزرار العلوي (اللغة، الإشعارات، والرسائل في أقصى اليسار بجوار الأزرار الحالية) ---
+# --- شريط الأزرار العلوي التفاعلي باستخدام st.popover لضمان عمل الأزرار وفتحها بشكل صحيح ---
 top_col1, top_col2, top_col3, top_col4, top_col5, top_col6, top_col7 = st.columns([6, 1, 0.6, 0.6, 0.6, 0.6, 0.6])
+
 with top_col2:
-    if st.button("🌐", help="تغيير اللغة"):
-        st.toast("تم النقر على زر اللغة")
+    with st.popover("🌐", help="تغيير اللغة"):
+        st.markdown("##### اختر لغة العرض")
+        lang = st.radio("اللغة", ["العربية (Arabic)", "English"], key="top_lang_choice")
+        if st.button("تطبيق اللغة"):
+            st.success(f"تم تغيير اللغة إلى: {lang}")
+
 with top_col3:
-    if st.button("💬", help="الرسائل"):
-        st.toast("لا توجد رسائل جديدة")
+    with st.popover("💬", help="الرسائل"):
+        st.markdown("##### رسائل النظام")
+        st.info("لا توجد رسائل جديدة حالياً.")
+
 with top_col4:
-    if st.button("🔔", help="الإشعارات"):
-        st.toast("لا توجد إشعارات جديدة")
+    with st.popover("🔔", help="الإشعارات"):
+        st.markdown("##### مركز الإشعارات")
+        st.success("النظام يعمل بكفاءة وجاهز.")
+
 with top_col5:
-    if st.button("⭐", help="المفضلة"):
-        st.toast("تم النقر على المفضلة")
+    with st.popover("⭐", help="المفضلة"):
+        st.markdown("##### الصفحات المفضلة")
+        st.write("- لوحة التحكم الرئيسية")
+        st.write("- إدارة المبيعات والفواتير")
+
 with top_col6:
-    if st.button("✏️", help="التعديل"):
-        st.toast("تم النقر على التعديل")
+    with st.popover("✏️", help="التعديل السريع"):
+        st.markdown("##### خيارات التعديل السريع")
+        st.write("يمكنك تعديل البيانات النشطة من هذه القائمة المنسدلة.")
+
 with top_col7:
-    if st.button("⋮", help="خيارات إضافية"):
-        st.toast("تم النقر على خيارات إضافية")
+    with st.popover("⋮", help="خيارات إضافية"):
+        st.markdown("##### خيارات النظام الإضافية")
+        if st.button("تحديث البيانات (Refresh)"):
+            st.rerun()
 
 def render_arabic_table_with_controls(df, section_name="التقرير"):
     if df.empty:
@@ -397,7 +413,7 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
         if "التاريخ" in df.columns:
             date_filter = st.date_input(f"فلترة بالتاريخ ({section_name})", value=[], key=f"date_{section_name}")
         else:
-            st.markdown("<p style='font-size:12px; color:#64748b; padding-top:10px;'>فلترة البحث الفعالة مفعلة</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size:12px; color:#64748b; padding-top:10px;'>فلترة البحث الفعالة مفعلة (Shrink to Fit)</p>", unsafe_allow_html=True)
 
     filtered_df = df.copy()
     if search_query:
@@ -483,7 +499,7 @@ if main_menu == "الرئيسية":
     st.markdown(f"""
         <div class="official-form-box">
             <h2 style="color: #714B67; margin: 0;">🚀 لوحة التحكم السحابية - {client_conf['client_name']}</h2>
-            <p style="color: #64748b; margin-top: 5px; font-size: 14px;">نشاط الشركة: {client_conf.get('company_activity', 'غير محدد')} | السجل التجاري: {client_conf['commercial_reg']} | الرقم الضريبي: {client_conf['tax_number']}</p>
+            <p style="color: #64748b; margin-top: 5px; font-size: 14px;">نشاط الشركة: {client_conf.get('company_activity', 'غير مححدد')} | السجل التجاري: {client_conf['commercial_reg']} | الرقم الضريبي: {client_conf['tax_number']}</p>
         </div>
     """, unsafe_allow_html=True)
 
