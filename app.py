@@ -362,6 +362,27 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- شريط الأزرار العلوي (اللغة، الإشعارات، والرسائل في أقصى اليسار بجوار الأزرار الحالية) ---
+top_col1, top_col2, top_col3, top_col4, top_col5, top_col6, top_col7 = st.columns([6, 1, 0.6, 0.6, 0.6, 0.6, 0.6])
+with top_col2:
+    if st.button("🌐", help="تغيير اللغة"):
+        st.toast("تم النقر على زر اللغة")
+with top_col3:
+    if st.button("💬", help="الرسائل"):
+        st.toast("لا توجد رسائل جديدة")
+with top_col4:
+    if st.button("🔔", help="الإشعارات"):
+        st.toast("لا توجد إشعارات جديدة")
+with top_col5:
+    if st.button("⭐", help="المفضلة"):
+        st.toast("تم النقر على المفضلة")
+with top_col6:
+    if st.button("✏️", help="التعديل"):
+        st.toast("تم النقر على التعديل")
+with top_col7:
+    if st.button("⋮", help="خيارات إضافية"):
+        st.toast("تم النقر على خيارات إضافية")
+
 def render_arabic_table_with_controls(df, section_name="التقرير"):
     if df.empty:
         st.info("لا توجد بيانات متاحة حالياً في هذا القسم.")
@@ -1087,7 +1108,6 @@ elif main_menu == "المحاسبة والشجرة":
         st.markdown("#### دفتر الأستاذ العام الشامل")
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['general_ledger']), "دفتر_الأستاذ")
 
-    # --- الحساب الجديد المطللوب: دفتر الاستاذ العام للشركاء ---
     with acc_tabs[10]:
         st.markdown("#### 👥 دفتر الاستاذ العام للشركاء (كشف حساب العميل / المورد بنفس الأكواد)")
         st.info("هذا الحساب يعرض تفاصيل وأرصدة وكشوفات حسابات العملاء والموردين بدقة مع الاحتفاظ بكافة البيانات والرموز.")
