@@ -329,28 +329,37 @@ st.markdown("""
     .stApp, body, p, span, div, label, input, select {
         direction: rtl !important; text-align: right !important; font-family: 'Segoe UI', Tahoma, sans-serif;
     }
-    .block-container { padding: 5rem 1.5rem 1.5rem 1.5rem !important; background-color: #f4f6f9; }
+    .block-container { padding: 4rem 1rem 1rem 1rem !important; background-color: #f4f6f9; max-width: 100% !important; }
     
     .stButton>button {
         font-size: 12px !important;
         padding: 4px 8px !important;
     }
     
+    /* تنسيق خاص لتصغير الجداول وجعلها تتناسب مع الشاشة (Shrink to Fit) تلقائياً */
+    .custom-table-container {
+        width: 100%;
+        overflow-x: auto;
+        margin-top: 10px;
+        margin-bottom: 15px;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        background-color: white;
+    }
     .custom-table {
         width: 100%; border-collapse: collapse; background-color: white; font-size: 11px;
-        border-radius: 6px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-top: 10px;
         table-layout: auto !important;
     }
-    .custom-table th { background-color: #714B67; color: white; padding: 8px; border-bottom: 2px solid #5a3b52; text-align: right; white-space: nowrap; }
-    .custom-table td { padding: 6px 8px; border-bottom: 1px solid #edf2f7; color: #2d3748; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
+    .custom-table th { background-color: #714B67; color: white; padding: 6px 8px; border-bottom: 2px solid #5a3b52; text-align: right; white-space: nowrap; font-size: 11px; }
+    .custom-table td { padding: 5px 8px; border-bottom: 1px solid #edf2f7; color: #2d3748; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; font-size: 11px; }
     
     .official-form-box {
-        background: white; padding: 20px; border-radius: 8px; border: 1px solid #dcdde1;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.04); margin-bottom: 20px;
+        background: white; padding: 15px; border-radius: 8px; border: 1px solid #dcdde1;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04); margin-bottom: 15px;
     }
     
     .metric-card {
-        background: white; padding: 15px; border-radius: 8px; border-right: 4px solid #714B67;
+        background: white; padding: 12px; border-radius: 8px; border-right: 4px solid #714B67;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center;
     }
     </style>
@@ -407,7 +416,7 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
         if "التاريخ" in df.columns:
             date_filter = st.date_input(f"فلترة بالتاريخ ({section_name})", value=[], key=f"date_{section_name}")
         else:
-            st.markdown("<p style='font-size:12px; color:#64748b; padding-top:10px;'>فلترة البحث الفعالة مفعلة (Shrink to Fit)</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size:11px; color:#64748b; padding-top:8px;'>فلترة البحث الفعالة مفعلة (Shrink to Fit)</p>", unsafe_allow_html=True)
 
     filtered_df = df.copy()
     if search_query:
@@ -424,7 +433,7 @@ def render_arabic_table_with_controls(df, section_name="التقرير"):
         if st.button("📄 PDF", key=f"pdf_{section_name}"):
             st.toast(f"تمت تهيئة وتصدير {section_name} إلى ملف PDF بنجاح!")
 
-    html_code = "<div style='overflow-x: auto;'><table class='custom-table'><thead><tr>"
+    html_code = "<div class='custom-table-container'><table class='custom-table'><thead><tr>"
     for col in filtered_df.columns: html_code += f"<th>{col}</th>"
     html_code += "</tr></thead><tbody>"
     for _, row in filtered_df.iterrows():
@@ -439,7 +448,7 @@ if 'active_module' not in st.session_state:
 
 with st.sidebar:
     client_conf = st.session_state['client_license_config']
-    st.markdown(f"<h2 style='color: #714B67; text-align: center;'>نظام أفق ERP</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='color: #714B67; text-align: center; font-size:22px;'>نظام أفق ERP</h2>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align: center; font-size: 11px; color: #64748b;'>مرخص لـ: <b>{client_conf['client_name']}</b></p>", unsafe_allow_html=True)
     
     if supabase_client:
@@ -492,8 +501,8 @@ if main_menu == "الرئيسية":
     client_conf = st.session_state['client_license_config']
     st.markdown(f"""
         <div class="official-form-box">
-            <h2 style="color: #714B67; margin: 0;">🚀 لوحة التحكم السحابية - {client_conf['client_name']}</h2>
-            <p style="color: #64748b; margin-top: 5px; font-size: 14px;">نشاط الشركة: {client_conf.get('company_activity', 'غير مححدد')} | السجل التجاري: {client_conf['commercial_reg']} | الرقم الضريبي: {client_conf['tax_number']}</p>
+            <h2 style="color: #714B67; margin: 0; font-size:20px;">🚀 لوحة التحكم السحابية - {client_conf['client_name']}</h2>
+            <p style="color: #64748b; margin-top: 5px; font-size: 12px;">نشاط الشركة: {client_conf.get('company_activity', 'غير مححدد')} | السجل التجاري: {client_conf['commercial_reg']} | الرقم الضريبي: {client_conf['tax_number']}</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -504,16 +513,16 @@ if main_menu == "الرئيسية":
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.markdown(f"<div class='metric-card'><p style='color: #64748b; margin:0; font-size:12px;'>إجمالي أرصدة العملاء</p><h3 style='color: #714B67; margin:5px 0 0 0;'>{total_cust_val:,.2f} ر.س</h3></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-card'><p style='color: #64748b; margin:0; font-size:11px;'>إجمالي أرصدة العملاء</p><h3 style='color: #714B67; margin:5px 0 0 0; font-size:16px;'>{total_cust_val:,.2f} ر.س</h3></div>", unsafe_allow_html=True)
     with col2:
-        st.markdown(f"<div class='metric-card'><p style='color: #64748b; margin:0; font-size:12px;'>إجمالي أرصدة الموردين</p><h3 style='color: #714B67; margin:5px 0 0 0;'>{total_supp_val:,.2f} ر.س</h3></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-card'><p style='color: #64748b; margin:0; font-size:11px;'>إجمالي أرصدة الموردين</p><h3 style='color: #714B67; margin:5px 0 0 0; font-size:16px;'>{total_supp_val:,.2f} ر.س</h3></div>", unsafe_allow_html=True)
     with col3:
-        st.markdown(f"<div class='metric-card'><p style='color: #64748b; margin:0; font-size:12px;'>إجمالي عدد الموظفين</p><h3 style='color: #714B67; margin:5px 0 0 0;'>{total_emp_count} موظف</h3></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-card'><p style='color: #64748b; margin:0; font-size:11px;'>إجمالي عدد الموظفين</p><h3 style='color: #714B67; margin:5px 0 0 0; font-size:16px;'>{total_emp_count} موظف</h3></div>", unsafe_allow_html=True)
     with col4:
-        st.markdown(f"<div class='metric-card'><p style='color: #64748b; margin:0; font-size:12px;'>أوامر الإنتاج المسجلة</p><h3 style='color: #714B67; margin:5px 0 0 0;'>{total_prod_orders} أمر</h3></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='metric-card'><p style='color: #64748b; margin:0; font-size:11px;'>أوامر الإنتاج المسجلة</p><h3 style='color: #714B67; margin:5px 0 0 0; font-size:16px;'>{total_prod_orders} أمر</h3></div>", unsafe_allow_html=True)
 
 elif main_menu == "الشركاء":
-    st.markdown("<h3 style='color: #714B67;'>👥 إدارة شركاء النجاح (العملاء والموردين)</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>👥 إدارة شركاء النجاح (العملاء والموردين)</h3>", unsafe_allow_html=True)
     t_cust, t_supp, t_add, t_excel = st.tabs(["📋 العملاء", "📋 الموردين", "➕ إضافة عميل أو مورد جديد", "📊 الاستيراد عن طريق الاكسيل"])
     
     with t_cust:
@@ -576,7 +585,7 @@ elif main_menu == "الشركاء":
                 st.error(f"حدث خطأ أثناء قراءة الملف: {e}")
 
 elif main_menu == "الموارد البشرية":
-    st.markdown("<h3 style='color: #714B67;'>👨‍💼 إدارة الموارد البشرية (HR) - التفاصيل الكاملة للموظفين</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>👨‍💼 إدارة الموارد البشرية (HR) - التفاصيل الكاملة للموظفين</h3>", unsafe_allow_html=True)
     hr_tab1, hr_tab2, hr_tab3, hr_tab4, hr_tab5, hr_tab6 = st.tabs([
         "📋 سجل الموظفين الشامل", "➕ إضافة موظف جديد", "⏰ متابعة الحضور والانصراف", "🏖️ إدارة الإجازات والطلبات", "💰 مسير الرواتب والأجور (Payroll)", "📊 استيراد الموظفين من الاكسيل"
     ])
@@ -672,7 +681,7 @@ elif main_menu == "الموارد البشرية":
                 st.error(f"حدث خطأ: {e}")
 
 elif main_menu == "الإنتاج":
-    st.markdown("<h3 style='color: #714B67;'>🏭 إدارة الإنتاج والمصنع/المطبخ - تفاصيل أوامر الإنتاج</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>🏭 إدارة الإنتاج والمصنع/المطبخ - تفاصيل أوامر الإنتاج</h3>", unsafe_allow_html=True)
     prod_tab1, prod_tab2, prod_tab3 = st.tabs(["⚙️ أوامر الإنتاج النشطة", "➕ إضافة أمر إنتاج جديد", "✅ أوامر الإنتاج المكتملة"])
     with prod_tab1:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['production_orders']), "أوامر_الإنتاج")
@@ -694,7 +703,7 @@ elif main_menu == "الإنتاج":
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['production_orders']), "أوامر_مكتملة")
 
 elif main_menu == "المشروعات":
-    st.markdown("<h3 style='color: #714B67;'>📊 إدارة المشاريع - التفاصيل الكاملة للمشاريع</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>📊 إدارة المشاريع - التفاصيل الكاملة للمشاريع</h3>", unsafe_allow_html=True)
     proj_tab1, proj_tab2 = st.tabs(["📋 قائمة المشاريع", "➕ إضافة مشروع جديد"])
     with proj_tab1:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['projects_db']), "المشاريع")
@@ -715,7 +724,7 @@ elif main_menu == "المشروعات":
                 st.rerun()
 
 elif main_menu == "مراكز التكلفة":
-    st.markdown("<h3 style='color: #714B67;'>🏷️ إدارة مراكز التكلفة - التفاصيل الكاملة</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>🏷️ إدارة مراكز التكلفة - التفاصيل الكاملة</h3>", unsafe_allow_html=True)
     cc_tab1, cc_tab2 = st.tabs(["📋 مراكز التكلفة الشاملة", "➕ إضافة مركز تكلفة جديد"])
     with cc_tab1:
         render_arabic_table_with_controls(pd.DataFrame(st.session_state['cost_centers_db']), "مراكز_التكلفة")
@@ -735,7 +744,7 @@ elif main_menu == "مراكز التكلفة":
                 st.rerun()
 
 elif main_menu == "الصلاحيات":
-    st.markdown("<h3 style='color: #714B67;'>🔐 شاشة إدارة الصلاحيات وتحديد صلاحيات المستخدمين بدقة</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>🔐 شاشة إدارة الصلاحيات وتحديد صلاحيات المستخدمين بدقة</h3>", unsafe_allow_html=True)
     perm_tab1, perm_tab2 = st.tabs(["👥 قائمة المستخدمين وصلاحياتهم الكاملة", "➕ إضافة / تعديل مستخدم والصلاحيات"])
     
     with perm_tab1:
@@ -794,7 +803,7 @@ elif main_menu == "الصلاحيات":
                     st.error("يرجى إدخال اسم المستخدم على الأقل.")
 
 elif main_menu == "المبيعات":
-    st.markdown("<h3 style='color: #714B67;'>🛒 موديول المبيعات وأوامر البيع والفواتير الضريبية (مع التحويل التفاعلي في نفس الشاشة)</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>🛒 موديول المبيعات وأوامر البيع والفواتير الضريبية (مع التحويل التفاعلي في نفس الشاشة)</h3>", unsafe_allow_html=True)
     sales_tab1, sales_tab2, sales_tab3 = st.tabs([
         "📄 عروض الأسعار وأوامر البيع والتحويل التفاعلي", 
         "🧾 الفاتورة الضريبية وفواتير المبيعات المترحلة", 
@@ -941,67 +950,67 @@ elif main_menu == "المبيعات":
                     
                     # قالب الفاتورة الضريبية الرسمية
                     invoice_html = f"""
-                    <div style="background: white; padding: 30px; border: 2px solid #714B67; border-radius: 10px; direction: rtl; text-align: right; color: #2d3748; font-family: 'Segoe UI', Tahoma, sans-serif;">
-                        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #714B67; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div style="background: white; padding: 25px; border: 2px solid #714B67; border-radius: 10px; direction: rtl; text-align: right; color: #2d3748; font-family: 'Segoe UI', Tahoma, sans-serif;">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #714B67; padding-bottom: 12px; margin-bottom: 15px;">
                             <div>
-                                <h2 style="color: #714B67; margin: 0;">فاتورة ضريبية مبسطة / Tax Invoice</h2>
-                                <p style="margin: 5px 0; font-size: 14px; font-weight: bold;">{c_conf['client_name']}</p>
-                                <p style="margin: 2px 0; font-size: 12px; color: #64748b;">العنوان: {c_conf['client_address']}</p>
-                                <p style="margin: 2px 0; font-size: 12px; color: #64748b;">الرقم الضريبي: {c_conf['tax_number']}</p>
+                                <h2 style="color: #714B67; margin: 0; font-size:18px;">فاتورة ضريبية مبسطة / Tax Invoice</h2>
+                                <p style="margin: 3px 0; font-size: 13px; font-weight: bold;">{c_conf['client_name']}</p>
+                                <p style="margin: 2px 0; font-size: 11px; color: #64748b;">العنوان: {c_conf['client_address']}</p>
+                                <p style="margin: 2px 0; font-size: 11px; color: #64748b;">الرقم الضريبي: {c_conf['tax_number']}</p>
                             </div>
                             <div style="text-align: left;">
-                                <div style="background: #714B67; color: white; padding: 5px 15px; border-radius: 5px; font-weight: bold; display: inline-block;">فاتورة معتمدة</div>
-                                <p style="margin: 8px 0 2px 0; font-size: 13px;"><b>رقم الفاتورة:</b> {inv_obj['رقم الفاتورة']}</p>
-                                <p style="margin: 2px 0; font-size: 13px;"><b>تاريخ الإصدار:</b> {inv_obj['التاريخ']}</p>
+                                <div style="background: #714B67; color: white; padding: 4px 12px; border-radius: 5px; font-weight: bold; display: inline-block; font-size:11px;">فاتورة معتمدة</div>
+                                <p style="margin: 6px 0 2px 0; font-size: 12px;"><b>رقم الفاتورة:</b> {inv_obj['رقم الفاتورة']}</p>
+                                <p style="margin: 2px 0; font-size: 12px;"><b>تاريخ الإصدار:</b> {inv_obj['التاريخ']}</p>
                             </div>
                         </div>
                         
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 13px;">
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 12px;">
                             <b>بيانات العميل:</b><br>
                             اسم العميل: {cust_name}<br>
                             الرقم الضريبي للعميل: {cust_info.get('الرقم الضريبي', 'غير متوفر')}<br>
                             العنوان: {cust_info.get('العنوان', 'غير متوفر')}
                         </div>
                         
-                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px;">
                             <thead>
                                 <tr style="background-color: #714B67; color: white;">
-                                    <th style="padding: 10px; border: 1px solid #ddd;">م</th>
-                                    <th style="padding: 10px; border: 1px solid #ddd;">وصف الصنف / الخدمة</th>
-                                    <th style="padding: 10px; border: 1px solid #ddd;">الكمية</th>
-                                    <th style="padding: 10px; border: 1px solid #ddd;">المبلغ غير شامل الضريبة</th>
-                                    <th style="padding: 10px; border: 1px solid #ddd;">إجمالي السطر</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">م</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">وصف الصنف / الخدمة</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">الكمية</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">المبلغ غير شامل الضريبة</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd;">إجمالي السطر</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">1</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">أصناف مبيعات معتمدة من أمر البيع ({inv_obj['رقم أمر البيع']})</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">1</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">{sub_amt:,.2f} ر.س</td>
-                                    <td style="padding: 8px; border: 1px solid #ddd;">{total_amt:,.2f} ر.س</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd;">1</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd;">أصناف مبيعات معتمدة من أمر البيع ({inv_obj['رقم أمر البيع']})</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd;">1</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd;">{sub_amt:,.2f} ر.س</td>
+                                    <td style="padding: 6px; border: 1px solid #ddd;">{total_amt:,.2f} ر.س</td>
                                 </tr>
                             </tbody>
                         </table>
                         
-                        <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-                            <div style="width: 250px; font-size: 13px;">
-                                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;">
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                            <div style="width: 230px; font-size: 12px;">
+                                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee;">
                                     <span>المبلغ الخاضع للضريبة:</span>
                                     <span><b>{sub_amt:,.2f} ر.س</b></span>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;">
+                                <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee;">
                                     <span>ضريبة القيمة المضافة (15%):</span>
                                     <span><b>{vat_amt:,.2f} ر.س</b></span>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; padding: 8px 0; background: #e2e8f0; font-weight: bold; margin-top: 5px; padding-right: 5px; padding-left: 5px;">
+                                <div style="display: flex; justify-content: space-between; padding: 6px 0; background: #e2e8f0; font-weight: bold; margin-top: 4px; padding-right: 4px; padding-left: 4px;">
                                     <span>الإجمالي المستحق:</span>
                                     <span>{total_amt:,.2f} ر.س</span>
                                 </div>
                             </div>
                         </div>
                         
-                        <div style="text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 11px; color: #64748b;">
+                        <div style="text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 10px; font-size: 10px; color: #64748b;">
                             شكراً لتعاملكم معنا | تم إنتاج هذه الفاتورة إلكترونياً عبر نظام أفق ERP السحابي
                         </div>
                     </div>
@@ -1042,7 +1051,7 @@ elif main_menu == "المبيعات":
             render_arabic_table_with_controls(pd.DataFrame(st.session_state['sales_quotations']), "تقرير_المبيعات_الشامل")
 
 elif main_menu == "المشتريات":
-    st.markdown("<h3 style='color: #714B67;'>📦 موديول المشتريات وأوامر الشراء والفواتير الضريبية (مع التحويل التفاعلي في نفس الشاشة)</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>📦 موديول المشتريات وأوامر الشراء والفواتير الضريبية (مع التحويل التفاعلي في نفس الشاشة)</h3>", unsafe_allow_html=True)
     pur_tab1, pur_tab2, pur_tab3 = st.tabs([
         "📄 طلبات وأوامر الشراء والتحويل التفاعلي", 
         "🧾 فاتورة المشتريات المترحلة", 
@@ -1189,7 +1198,7 @@ elif main_menu == "المشتريات":
             render_arabic_table_with_controls(pd.DataFrame(st.session_state['purchase_quotations']), "تقرير_المشتريات_الشامل")
 
 elif main_menu == "المخزون":
-    st.markdown("<h3 style='color: #714B67;'>📋 نظام المخزون والجرد المستمر (تفاصيل كاملة لكل صنف)</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>📋 نظام المخزون والجرد المستمر (تفاصيل كاملة لكل صنف)</h3>", unsafe_allow_html=True)
     inv_tab1, inv_tab2, inv_tab3 = st.tabs(["📋 أرصدة المخزون الحالية", "➕ إضافة صنف جديد بالمخزن", "📊 استيراد الأصناف من الاكسيل"])
     with inv_tab1:
         stock_rows = []
@@ -1243,7 +1252,7 @@ elif main_menu == "المخزون":
                 st.error(f"حدث خطأ: {e}")
 
 elif main_menu == "المحاسبة والشجرة":
-    st.markdown("<h3 style='color: #714B67;'>💰 النظام المحاسبي والشجرة (شجرة الحسابات التفاعلية مع زر + ومطابقات Word)</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>💰 النظام المحاسبي والشجرة (شجرة الحسابات التفاعلية مع زر + ومطابقات Word)</h3>", unsafe_allow_html=True)
     
     acc_tabs = st.tabs([
         "🌳 شجرة الحسابات التفاعلية", "⚖️ ميزان المراجعة", "📈 قائمة الدخل", "💵 التدفقات", 
@@ -1437,7 +1446,7 @@ elif main_menu == "المحاسبة والشجرة":
                     )
 
 elif main_menu == "الإعدادات":
-    st.markdown("<h3 style='color: #714B67;'>⚙️ إعدادات النظام المتقدمة وتخصيص الشركة</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #714B67; font-size:18px;'>⚙️ إعدادات النظام المتقدمة وتخصيص الشركة</h3>", unsafe_allow_html=True)
     with st.form("settings_form"):
         conf = st.session_state['client_license_config']
         c_name = st.text_input("اسم الشركة المرخص لها", value=conf['client_name'])
