@@ -948,7 +948,7 @@ elif main_menu == "المبيعات":
                     sub_amt = total_amt / 1.15
                     vat_amt = total_amt - sub_amt
                     
-                    # قالب الفاتورة الضريبية الرسمية
+                    # قالب الفاتورة الضريبية الرسمية (تم تصحيح العرض وإصلاح الكود البرمجي الظاهر)
                     invoice_html = f"""
                     <div style="background: white; padding: 25px; border: 2px solid #714B67; border-radius: 10px; direction: rtl; text-align: right; color: #2d3748; font-family: 'Segoe UI', Tahoma, sans-serif;">
                         <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #714B67; padding-bottom: 12px; margin-bottom: 15px;">
