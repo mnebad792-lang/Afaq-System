@@ -976,7 +976,7 @@ elif main_menu == "المبيعات":
                             # إنشاء قيد اليومية تلقائياً
                             st.session_state['general_ledger'].append({
                                 "رقم القيد": f"JE-{int(datetime.now().timestamp())}",
-                                "البيان": fتحصيل/إثبات فاتورة مبيعات رقم {inv_num_gen} للعميل {ed_cust} عبر {pay_method},
+                                "البيان": f"إثبات فاتورة مبيعات رقم {inv_num_gen} للعميل {ed_cust} عبر {pay_method}",
                                 "المدين": ed_tot,
                                 "الدائن": ed_tot
                             })
