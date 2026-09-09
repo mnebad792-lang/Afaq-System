@@ -921,11 +921,111 @@ elif main_menu == "المبيعات":
 
     with sales_tab2:
         st.markdown("#### 🧾 شاشة الفواتير الضريبية المعتمدة وأوامر البيع المفوترة والمرحلة")
-        st.info("💡 ملاحظة هامة: الفواتير أدناه تم ترحيلها تلقائياً عند حفظها من شاشة أمر البيع.")
+        st.info("💡 ملاحظة هامة: الفواتير أدناه تم ترحيلها تلقائياً عند حفظها من شاشة أمر البيع. **انقر على أي فاتورة أدناه أو اخترها لعرض فاتورتها الضريبية الرسمية وطباعتها:**")
         
         if st.session_state['sales_invoices_db']:
-            df_s_inv = pd.DataFrame(st.session_state['sales_invoices_db'])
-            render_arabic_table_with_controls(df_s_inv, "سجل_فواتير_المبيعات_النهائية")
+            # --- تفعيل إمكانية النقر والعرض المباشر للفاتورة الضريبية ---
+            inv_options = [inv["رقم الفاتورة"] for inv in st.session_state['sales_invoices_db']]
+            selected_invoice_to_view = st.selectbox("🔍 اختر رقم الفاتورة لفتح الفاتورة الضريبية الرسمية وعرضها/طباعتها:", inv_options)
+            
+            if selected_invoice_to_view:
+                inv_obj = next((inv for inv in st.session_state['sales_invoices_db'] if inv["رقم الفاتورة"] == selected_invoice_to_view), None)
+                if inv_obj:
+                    c_conf = st.session_state['client_license_config']
+                    cust_name = inv_obj["العميل"]
+                    cust_info = st.session_state['customers_db'].get(cust_name, {"العنوان": "الرياض", "الهاتف": "0500000000", "الرقم الضريبي": "300000000000003"})
+                    
+                    total_amt = inv_obj["المبلغ شامل الضريبة"]
+                    sub_amt = total_amt / 1.15
+                    vat_amt = total_amt - sub_amt
+                    
+                    # قالب الفاتورة الضريبية الرسمية
+                    invoice_html = f"""
+                    <div style="background: white; padding: 30px; border: 2px solid #714B67; border-radius: 10px; direction: rtl; text-align: right; color: #2d3748; font-family: 'Segoe UI', Tahoma, sans-serif;">
+                        <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #714B67; padding-bottom: 15px; margin-bottom: 20px;">
+                            <div>
+                                <h2 style="color: #714B67; margin: 0;">فاتورة ضريبية مبسطة / Tax Invoice</h2>
+                                <p style="margin: 5px 0; font-size: 14px; font-weight: bold;">{c_conf['client_name']}</p>
+                                <p style="margin: 2px 0; font-size: 12px; color: #64748b;">العنوان: {c_conf['client_address']}</p>
+                                <p style="margin: 2px 0; font-size: 12px; color: #64748b;">الرقم الضريبي: {c_conf['tax_number']}</p>
+                            </div>
+                            <div style="text-align: left;">
+                                <div style="background: #714B67; color: white; padding: 5px 15px; border-radius: 5px; font-weight: bold; display: inline-block;">فاتورة معتمدة</div>
+                                <p style="margin: 8px 0 2px 0; font-size: 13px;"><b>رقم الفاتورة:</b> {inv_obj['رقم الفاتورة']}</p>
+                                <p style="margin: 2px 0; font-size: 13px;"><b>تاريخ الإصدار:</b> {inv_obj['التاريخ']}</p>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 13px;">
+                            <b>بيانات العميل:</b><br>
+                            اسم العميل: {cust_name}<br>
+                            الرقم الضريبي للعميل: {cust_info.get('الرقم الضريبي', 'غير متوفر')}<br>
+                            العنوان: {cust_info.get('العنوان', 'غير متوفر')}
+                        </div>
+                        
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px;">
+                            <thead>
+                                <tr style="background-color: #714B67; color: white;">
+                                    <th style="padding: 10px; border: 1px solid #ddd;">م</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd;">وصف الصنف / الخدمة</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd;">الكمية</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd;">المبلغ غير شامل الضريبة</th>
+                                    <th style="padding: 10px; border: 1px solid #ddd;">إجمالي السطر</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">1</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">أصناف مبيعات معتمدة من أمر البيع ({inv_obj['رقم أمر البيع']})</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">1</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">{sub_amt:,.2f} ر.س</td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;">{total_amt:,.2f} ر.س</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+                            <div style="width: 250px; font-size: 13px;">
+                                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;">
+                                    <span>المبلغ الخاضع للضريبة:</span>
+                                    <span><b>{sub_amt:,.2f} ر.س</b></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;">
+                                    <span>ضريبة القيمة المضافة (15%):</span>
+                                    <span><b>{vat_amt:,.2f} ر.س</b></span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; padding: 8px 0; background: #e2e8f0; font-weight: bold; margin-top: 5px; padding-right: 5px; padding-left: 5px;">
+                                    <span>الإجمالي المستحق:</span>
+                                    <span>{total_amt:,.2f} ر.س</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 11px; color: #64748b;">
+                            شكراً لتعاملكم معنا | تم إنتاج هذه الفاتورة إلكترونياً عبر نظام أفق ERP السحابي
+                        </div>
+                    </div>
+                    """
+                    
+                    st.markdown(invoice_html, unsafe_allow_html=True)
+                    
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    col_p1, col_p2 = st.columns(2)
+                    with col_p1:
+                        if st.button("🖨️ طباعة الفاتورة للعميل (Print)", use_container_width=True):
+                            st.toast("جاري إرسال الفاتورة إلى طابعة العميل...")
+                            st.balloons()
+                    with col_p2:
+                        st.download_button(
+                            label="📥 تحميل وتصدير الفاتورة (HTML / PDF)",
+                            data=invoice_html,
+                            file_name=f"Tax_Invoice_{selected_invoice_to_view}.html",
+                            mime="text/html",
+                            use_container_width=True
+                        )
+
+            st.markdown("---")
+            render_arabic_table_with_controls(pd.DataFrame(st.session_state['sales_invoices_db']), "سجل_فواتير_المبيعات_النهائية")
             
             st.markdown("---")
             st.markdown("#### 🗑️ إدارة الحذف النهائي للفواتير المرحلة")
